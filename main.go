@@ -42,7 +42,7 @@ func main() {
 		}
 	})
 
-	v1 := router.Group("/v1/api")
+	v1 := router.Group("/api/v1")
 
 	v1.Use(middleware.AuthorizeJWT())
 	{
@@ -58,6 +58,6 @@ func main() {
 		v1.GET("/publisher/select", controller.GetPublishers)
 	}
 
-	port := "8080"
+	port := "443"
 	router.Run(":" + port)
 }
