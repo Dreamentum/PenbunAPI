@@ -11,11 +11,14 @@ import (
 	"penbun.com/api/src/service"
 
 	"github.com/gin-gonic/gin"
+	cors "github.com/rs/cors/wrapper/gin"
 )
 
 func main() {
 	// router := gin.New()
 	router := gin.Default()
+
+	router.Use(cors.Default())
 	gin.SetMode(gin.DebugMode)
 
 	var loginService service.LoginService = service.StaticLoginService()
@@ -46,6 +49,7 @@ func main() {
 
 	v1.Use(middleware.AuthorizeJWT())
 	{
+		v1.StaticFile("/favicon.ico", "./favicon.ico")
 		v1.GET("/welcome", controller.HelloHandler)
 		v1.GET("/mssql", controller.CheckMssql)
 		v1.GET("/book/select", controller.GetBooks)

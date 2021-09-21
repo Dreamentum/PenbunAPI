@@ -51,6 +51,22 @@ func GetBookById(ctx *gin.Context) {
 	log.Println("[SQL][GetBookById] SELECTED BOOK: ", book_id)
 }
 
+// func GetBookByIdAndPrice(ctx *gin.Context) {
+// 	var book model.BOOK
+// 	book_id := ctx.Param("id")
+// 	book_price := ctx.Param("price")
+
+// 	err := config.DB.QueryRow("SELECT BookId, BookName, BookPrice, PublisherId, UpdateDate FROM tb_books WHERE BookId=? AND BookPrice=?", book_id, book_price).Scan(
+// 		&book.ID, &book.Name, &book.Price, &book.PublisherID, &book.UpdatedDate,
+// 	)
+
+// 	if err != nil {
+// 		log.Fatalln("[SQL][Error][GetBookById] Setection Error :", err.Error())
+// 	}
+// 	ctx.JSON(http.StatusOK, gin.H{"book": book})
+// 	log.Println("[SQL][GetBookById] SELECTED BOOK: ", book_id)
+// }
+
 // Book type
 func GetBookTypes(ctx *gin.Context) {
 	rows, err := config.DB.Query("SELECT BookTypeId ,BookTypeName ,BookOwnerName ,Description ,Status ,UpdateDate ,UpdateBy FROM tb_BookTypes ORDER BY BookTypeId ASC")
@@ -65,7 +81,7 @@ func GetBookTypes(ctx *gin.Context) {
 
 	for rows.Next() {
 		var bt model.BOOK_TYPE
-		
+
 		err := rows.Scan(&bt.ID, &bt.Name, &bt.OwenerName, &bt.Description, &bt.Status, &bt.UpdatedAt, &bt.UpdateBy)
 		if err != nil {
 			log.Fatalln("[!][book/types] Scan failed:", err.Error())
