@@ -9,7 +9,7 @@ import (
 )
 
 func HelloHandler(ctx *gin.Context) {
-	ctx.JSON(http.StatusOK, gin.H{"message": "PENBUN API Version 1.0.0.2 [2020/MAY/13]"})
+	ctx.JSON(http.StatusOK, gin.H{"message": "PENBUN API Version 1.0.14.2 [2022/FEB/14]"})
 }
 
 func CheckMssql(ctx *gin.Context) {
@@ -32,4 +32,11 @@ func CheckError(err error) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func RecoveryHandler(c *gin.Context, err interface{}) {
+	c.HTML(500, "error.tmpl", gin.H{
+		"title": "Error",
+		"err":   err,
+	})
 }

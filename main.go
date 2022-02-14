@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -10,15 +11,17 @@ import (
 	"penbun.com/api/src/middleware"
 	"penbun.com/api/src/service"
 
+	nice "github.com/ekyoung/gin-nice-recovery"
 	"github.com/gin-gonic/gin"
-	cors "github.com/rs/cors/wrapper/gin"
 )
 
 func main() {
-	// router := gin.New()
-	router := gin.Default()
-
-	router.Use(cors.Default())
+	// runtime.GOMAXPROCS(runtime.NumCPU())
+	router := gin.New()
+	router.Use(gin.Logger()) // Install the default logger, not required
+	// router := gin.Default()
+	// router.Use(cors.Default())
+	router.Use(nice.Recovery(controller.RecoveryHandler))
 	gin.SetMode(gin.DebugMode)
 
 	var loginService service.LoginService = service.StaticLoginService()
@@ -33,6 +36,19 @@ func main() {
 
 	log.Printf("[MSSQL] Connected!\n")
 	defer config.DB.Close()
+
+	// Recovery middleware recovers from any panics and writes a 500 if there was one.
+	router.Use(gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
+		if err, ok := recovered.(string); ok {
+			c.String(http.StatusInternalServerError, fmt.Sprintf("error: %s", err))
+		}
+		c.AbortWithStatus(http.StatusInternalServerError)
+	}))
+
+	router.GET("/panic", func(c *gin.Context) {
+		// panic with a string -- the custom middleware could save this to a database or report it to the user
+		panic("golang panic")
+	})
 
 	router.POST("/login", func(ctx *gin.Context) {
 		token := loginController.Login(ctx)

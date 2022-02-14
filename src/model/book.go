@@ -14,7 +14,7 @@ type BOOK struct {
 // BOOKS array of BOOK type
 type BOOKS []BOOK
 
-type BOOK_TYPE struct {
+type BOOK_CATALOG struct {
 	ID          *string   `json:"id"`
 	Name        *string   `json:"name"`
 	OwenerName  *string   `json:"owenername"`
@@ -27,8 +27,8 @@ type BOOK_TYPE struct {
 	IsDelete    bool      `json:"isdelete"`
 }
 
-// BOOK_TYPES array of TYPE
-type BOOK_TYPES []BOOK_TYPE
+// BOOK_CATALOGS array of BOOK_CATALOG (catalog)
+type BOOK_CATALOGS []BOOK_CATALOG
 
 type BOOK_GROUP struct {
 	ID           *string  `json:"id"`

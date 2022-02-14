@@ -77,10 +77,10 @@ func GetBookTypes(ctx *gin.Context) {
 	}
 	defer rows.Close()
 
-	var booktypes []model.BOOK_TYPE
+	var booktypes []model.BOOK_CATALOG
 
 	for rows.Next() {
-		var bt model.BOOK_TYPE
+		var bt model.BOOK_CATALOG
 
 		err := rows.Scan(&bt.ID, &bt.Name, &bt.OwenerName, &bt.Description, &bt.Status, &bt.UpdatedAt, &bt.UpdateBy)
 		if err != nil {
