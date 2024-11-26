@@ -9,7 +9,7 @@ import (
 )
 
 func HelloHandler(ctx *gin.Context) {
-	ctx.JSON(http.StatusOK, gin.H{"message": "PENBUN API Version 1.0.14.2 [2022/FEB/14]"})
+	ctx.JSON(http.StatusOK, gin.H{"message": "PENBUN API Version 1.0.14.6 [2024/NOV/20]"})
 }
 
 func CheckMssql(ctx *gin.Context) {

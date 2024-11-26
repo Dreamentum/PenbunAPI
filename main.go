@@ -78,6 +78,6 @@ func main() {
 		v1.GET("/publisher/select", controller.GetPublishers)
 	}
 
-	port := "443"
+	port := "8089"
 	router.Run(":" + port)
 }

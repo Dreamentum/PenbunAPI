@@ -7,11 +7,11 @@ import (
 	_ "github.com/denisenkom/go-mssqldb"
 )
 
-var Sever = "134.209.104.247"
+var Sever = "159.65.5.144"
 var Port = 1433
 var User = "sa"
-var Password = "penbun@1q2w3e4r5t"
-var Database = "PNB"
+var Password = "Penbun@1234"
+var Database = "PENBUN"
 
 // DB database global
 var DB *sql.DB
