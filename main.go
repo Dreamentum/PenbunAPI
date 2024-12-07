@@ -5,9 +5,9 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"time"
 	"runtime"
 	"syscall"
+	"time"
 
 	"PenbunAPI/config"
 	"PenbunAPI/routes"
@@ -74,6 +74,7 @@ func main() {
 
 	// ลงทะเบียน Routes พร้อมส่ง Database Connection
 	routes.RegisterV1Routes(app, config.DB)
+
 	// routes.RegisterV2Routes(app, config.DB)
 
 	// เริ่มเซิร์ฟเวอร์

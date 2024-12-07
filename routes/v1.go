@@ -1,11 +1,12 @@
 package routes
 
 import (
-	"os"
-	"PenbunAPI/middleware"
 	"PenbunAPI/controllers"
+	"PenbunAPI/middleware"
+	"os"
 
 	"database/sql"
+
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -38,4 +39,16 @@ func RegisterV1Routes(app *fiber.App, db *sql.DB) {
 	protected.Post("/books", controllers.CreateBook)
 	protected.Put("/books/:id", controllers.UpdateBook)
 	protected.Delete("/books/:id", controllers.DeleteBook)
+
+	RegisterPublisherRoutes(v1)
+}
+
+func RegisterPublisherRoutes(v1 fiber.Router) {
+	publisher := v1.Group("/publisher")
+	publisher.Post("/insert", controllers.InsertPublisher)
+	publisher.Get("/select/all", controllers.SelectAllPublishers)
+	publisher.Get("/select/:id", controllers.SelectPublisherByID)
+	publisher.Put("/update/:id", controllers.UpdatePublisherByID)
+	publisher.Put("/delete/:id", controllers.DeletePublisher)
+	publisher.Delete("/remove/:id", controllers.RemovePublisher)
 }
