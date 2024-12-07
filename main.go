@@ -55,7 +55,7 @@ func main() {
 		StrictRouting:     true,
 		EnablePrintRoutes: true,
 		ServerHeader:      "Fiber",
-		AppName:           "PENBUN API v1.2.0",
+		AppName:           "PENBUN API v1.3.0",
 	})
 
 	// ใช้ JWTMiddleware ระดับ Global
