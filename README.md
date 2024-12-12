@@ -1,10 +1,9 @@
 
-# PenbunAPI
+# PenbunAPI v1.4.1
 
 PenbunAPI is a RESTful API designed to manage the distribution and supply of books and stationery. It provides robust features for inventory management, order processing, and user authentication using JWT.
 
-## Features
-
+## Previous Version
 - **Authentication**: Secure login with JWT-based authentication.
 - **Inventory Management**: CRUD operations for books, book types, and references.
 - **Order and Delivery**: Manage orders and deliveries.
@@ -12,7 +11,19 @@ PenbunAPI is a RESTful API designed to manage the distribution and supply of boo
 - **Versioned API**: Support for multiple API versions (e.g., v1, v2).
 - **Graceful Shutdown**: Handles safe server shutdown for cleanup and database disconnections.
 
-## Project Structure
+## What's New in v1.4.1
+
+- Added comprehensive management for `tb_publisher` including:
+  - Insert Publisher
+  - Select All Publishers
+  - Select Publisher by ID
+  - Update Publisher by ID
+  - Delete Publisher (soft delete by updating `is_delete = 1`)
+  - Remove Publisher (hard delete from the database)
+- Introduced transaction handling (`Rollback`, `Panic`) for critical operations to ensure data consistency.
+- Enhanced API structure for improved modularity and separation of concerns.
+
+## Updated Project Structure
 
 ```
 PenbunAPI/
@@ -25,16 +36,18 @@ PenbunAPI/
 ├── controllers/
 │   ├── auth.go           # Authentication endpoints
 │   ├── books.go          # Book management endpoints
+│   └── publishers.go     # Publisher management endpoints
 │   └── references.go     # Reference management endpoints
 ├── models/
 │   ├── user.go           # User-related structs and logic
 │   ├── book.go           # Book-related structs and logic
 │   ├── bookType.go       # Book Type management endpoints
-│   └── reference.go      # Reference management endpoints
+│   └── publisher.go      # Publisher-related structs and logic
+│   └── reference.go      # Reference-related structs and logic
 ├── routes/
-│   ├── public.go         # Public API version routes for testing or pinging
-│   ├── v1.go             # API version 1 routes and separate Public/Protected 
-│   └── v2.go             # API version 2 routes and separate Public/Protected 
+│   ├── public.go         # Public API version routes
+│   ├── v1.go             # API version 1 routes and grouping
+│   └── v2.go             # API version 2 routes (placeholder)
 ├── middleware/
 │   └── jwt.go            # JWT middleware for secure endpoints
 ├── logs/
@@ -43,25 +56,38 @@ PenbunAPI/
 └── go.mod                # Go module file
 ```
 
+## Publisher API Endpoints
+
+### Base Path: `/api/v1/protected/publishers`
+
+| Method   | Endpoint           | Description                                | Required Headers    | Body Example                                                                                           |
+|----------|--------------------|--------------------------------------------|---------------------|-------------------------------------------------------------------------------------------------------|
+| `POST`   | `/insert`          | Insert a new Publisher                    | `Authorization: Bearer <Token>` | `{ "publisher_name": "Publisher Name", "publisher_type_id": "PUBT001", "contact_name1": "John Doe", ... }` |
+| `GET`    | `/select/all`      | Select all Publishers                     | `Authorization: Bearer <Token>` | N/A                                                                                                   |
+| `GET`    | `/select/:id`      | Select a Publisher by ID                  | `Authorization: Bearer <Token>` | N/A                                                                                                   |
+| `PUT`    | `/update/:id`      | Update a Publisher by ID                  | `Authorization: Bearer <Token>` | `{ "publisher_name": "Updated Name", "contact_name1": "Jane Doe", ... }`                             |
+| `PUT`    | `/delete/:id`      | Soft delete a Publisher (`is_delete = 1`) | `Authorization: Bearer <Token>` | N/A                                                                                                   |
+| `DELETE` | `/remove/:id`      | Hard delete a Publisher                   | `Authorization: Bearer <Token>` | N/A                                                                                                   |
+
 ## Libraries and Frameworks
 
-### **Backend Framework**
+### Backend Framework
 - [Fiber](https://gofiber.io/) - High-performance web framework for Go.
 
-### **Authentication**
+### Authentication
 - [JWT (golang-jwt)](https://github.com/golang-jwt/jwt) - JWT implementation in Go for secure authentication.
 
-### **Database**
+### Database
 - [MSSQL (go-mssqldb)](https://github.com/denisenkom/go-mssqldb) - Microsoft SQL Server driver for Go.
 
-### **Hashing**
+### Hashing
 - [Bcrypt (golang.org/x/crypto/bcrypt)](https://pkg.go.dev/golang.org/x/crypto/bcrypt) - Secure password hashing.
 
-### **Environment Variables**
+### Environment Variables
 - [Godotenv](https://github.com/joho/godotenv) - Load environment variables from `.env` file.
 
-### **Logging**
-- [Logrus](https://github.com/sirupsen/logrus) - Structured logging for Go.
+### Logging
+- Built-in `log` package in Go for lightweight logging.
 
 ## Installation and Setup
 
@@ -97,58 +123,6 @@ PenbunAPI/
    ```bash
    go run main.go
    ```
-
-5. **Optional**: Create a new user using `bcrypt` for password hashing.
-
-   - Install `htpasswd`:
-     ```bash
-     sudo apt update
-     sudo apt install apache2-utils -y
-     ```
-
-   - Generate `bcrypt` hash:
-     ```bash
-     htpasswd -nbBC 10 username password
-     ```
-
-     Sample output:
-     ```
-     username:$2y$10$KfQ8mU5VvJ5QGk7/LN9OeOujOPEwLjD3Oo4yEWDwEpr6/LkfuPWoK
-     ```
-
-   - Insert into Database:
-     ```sql
-     DELETE FROM tb_users;
-     DBCC CHECKIDENT ('tb_users', RESEED, 0);
-
-     INSERT INTO tb_users (user_name, user_password)
-     VALUES ('username', '$2y$10$KfQ8mU5VvJ5QGk7/LN9OeOujOPEwLjD3Oo4yEWDwEpr6/LkfuPWoK');
-     ```
-
-## Endpoints Overview
-
-### Version 1 (`/api/v1`)
-- **Authentication**:
-  - `POST /public/login` - User login and JWT generation.
-  - `POST /public/logout` - Logout and blacklist token.
-- **Books**:
-  - `POST /protected/books` - Create a new book.
-  - `PUT /protected/books/:id` - Update book details.
-  - `DELETE /protected/books/:id` - Delete a book.
-- **References**:
-  - `GET /protected/reference` - Retrieve reference data.
-- **Ping**:
-  - `GET /public/ping` - Check server health.
-
-### Version 2 (`/api/v2`)
-- **Books**:
-  - `GET /public/books` - Retrieve all books.
-  - `GET /protected/books/:id` - Retrieve book by ID.
-
-## Graceful Shutdown
-
-- Fiber supports Graceful Shutdown for safe cleanup and resource disconnection.
-- Handled in `main.go` using Unix Signals (`SIGINT`, `SIGTERM`).
 
 ## License
 

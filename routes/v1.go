@@ -10,7 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// RegisterRoutes will register all V1 routes
+// RegisterV1Routes will register all V1 routes
 func RegisterV1Routes(app *fiber.App, db *sql.DB) {
 	// Group สำหรับ API Version 1
 	v1 := app.Group("/api/v1")
@@ -19,36 +19,27 @@ func RegisterV1Routes(app *fiber.App, db *sql.DB) {
 	public := v1.Group("/public")
 	RegisterPublicRoutes(public, db)
 
-	// Route สำหรับ login (ไม่ใช้ Middleware)
-	public.Post("/login", controllers.Login)
+	public.Post("/login", controllers.Login)   // Route สำหรับ login (ไม่ใช้ Middleware)
+	public.Post("/logout", controllers.Logout) // Route สำหรับ logout (ไม่ใช้ Middleware)
 
-	// Route สำหรับ logout (ไม่ใช้ Middleware)
-	public.Post("/logout", controllers.Logout)
-
-	// Group สำหรับ protected API
+	// Group สำหรับ Protected API
 	protected := v1.Group("/protected")
 	protected.Use(middleware.JWTMiddleware(os.Getenv("JWT_SECRET")))
 
-	// Route สำหรับ Refresh Token
-	protected.Post("/refresh", controllers.RefreshToken)
-
-	// Route สำหรับ get ค่า references
-	protected.Get("/reference", controllers.GetReference)
+	protected.Post("/refresh", controllers.RefreshToken)  // Route สำหรับ Refresh Token
+	protected.Get("/reference", controllers.GetReference) // Route สำหรับ get ค่า references
 
 	// Routes สำหรับการจัดการ books
 	protected.Post("/books", controllers.CreateBook)
 	protected.Put("/books/:id", controllers.UpdateBook)
 	protected.Delete("/books/:id", controllers.DeleteBook)
 
-	RegisterPublisherRoutes(v1)
-}
-
-func RegisterPublisherRoutes(v1 fiber.Router) {
-	publisher := v1.Group("/publisher")
-	publisher.Post("/insert", controllers.InsertPublisher)
-	publisher.Get("/select/all", controllers.SelectAllPublishers)
-	publisher.Get("/select/:id", controllers.SelectPublisherByID)
-	publisher.Put("/update/:id", controllers.UpdatePublisherByID)
-	publisher.Put("/delete/:id", controllers.DeletePublisher)
-	publisher.Delete("/remove/:id", controllers.RemovePublisher)
+	// Group สำหรับ Publisher API
+	publishers := protected.Group("/publishers")
+	publishers.Post("/insert", controllers.InsertPublisher)           // เพิ่ม Publisher
+	publishers.Get("/select/all", controllers.SelectAllPublishers)    // ดึงข้อมูล Publisher ทั้งหมด
+	publishers.Get("/select/:id", controllers.SelectPublisherByID)    // ดึงข้อมูล Publisher ตาม ID
+	publishers.Put("/update/:id", controllers.UpdatePublisherByID)    // อัปเดต Publisher ตาม ID
+	publishers.Put("/delete/:id", controllers.DeletePublisherByID)    // เปลี่ยน is_delete = 1
+	publishers.Delete("/remove/:id", controllers.RemovePublisherByID) // ลบข้อมูลจริง
 }
