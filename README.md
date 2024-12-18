@@ -78,24 +78,17 @@ Publisher API Endpoints
 | `PUT` | `/delete/:id` | Soft delete a Publisher (`is_delete = 1`) | `Authorization: Bearer <Token>` | N/A |
 | `DELETE` | `/remove/:id` | Hard delete a Publisher | `Authorization: Bearer <Token>` | N/A |
 
-## Paging Example in Postman
+## All Example in Postman
 
-| **Method** | **Endpoint** | **Description** | **Header** | **Body (Example)** |
+| Method | Endpoint | Description | Header | Body (Example) |
 | --- | --- | --- | --- | --- |
-
-| **GET** | `/api/v1/protected/publishers/select/all` | ดึงข้อมูล Publisher ทั้งหมด | `Authorization: Bearer <Token>` | N/A |
-
-| **GET** | `/api/v1/protected/publishers/select/page` | ดึงข้อมูล Publisher แบบ Paging | `Authorization: Bearer <Token>` | Query Parameters: `?page=1&limit=10` |
-
-| **GET** | `/api/v1/protected/publishers/select/:id` | ดึงข้อมูล Publisher ตาม ID | `Authorization: Bearer <Token>` | N/A |
-
-| **POST** | `/api/v1/protected/publishers/insert` | เพิ่ม Publisher ใหม่ | `Authorization: Bearer <Token>` | `{ "publisher_type_id": "PUBT001", "publisher_name": "Publisher Name", "contact_name1": "John Doe", ... }` |
-
-| **PUT** | `/api/v1/protected/publishers/update/:id` | อัปเดตข้อมูล Publisher ตาม ID | `Authorization: Bearer <Token>` | `{ "publisher_name": "Updated Name", "contact_name1": "Jane Doe", ... }` |
-
-| **PUT** | `/api/v1/protected/publishers/delete/:id` | เปลี่ยน is_delete = 1 (Soft Delete) | `Authorization: Bearer <Token>` | N/A |
-
-| **DELETE** | `/api/v1/protected/publishers/remove/:id` | ลบข้อมูล Publisher ออกจากฐานข้อมูลจริง (Hard Delete) | `Authorization: Bearer <Token>` | N/A |
+| `GET` | `/api/v1/protected/publishers/select/all` | ดึงข้อมูล Publisher ทั้งหมด | `Authorization: Bearer <Token>` | N/A |
+| `GET` | `/api/v1/protected/publishers/select/page` | ดึงข้อมูล Publisher แบบ Paging | `Authorization: Bearer <Token>` | Query Parameters: `?page=1&limit=10` |
+| `GET` | `/api/v1/protected/publishers/select/:id` | ดึงข้อมูล Publisher ตาม ID | `Authorization: Bearer <Token>` | N/A |
+| `POST` | `/api/v1/protected/publishers/insert` | เพิ่ม Publisher ใหม่ | `Authorization: Bearer <Token>` | `{ "publisher_type_id": "PUBT001", "publisher_name": "Publisher Name", "contact_name1": "John Doe", ... }` |
+| `PUT` | `/api/v1/protected/publishers/update/:id` | อัปเดตข้อมูล Publisher ตาม ID | `Authorization: Bearer <Token>` | `{ "publisher_name": "Updated Name", "contact_name1": "Jane Doe", ... }` |
+| `PUT` | `/api/v1/protected/publishers/delete/:id` | เปลี่ยน is_delete = 1 (Soft Delete) | `Authorization: Bearer <Token>` | N/A |
+| `DELETE` | `/api/v1/protected/publishers/remove/:id` | ลบข้อมูล Publisher ออกจากฐานข้อมูลจริง (Hard Delete) | `Authorization: Bearer <Token>` | N/A |
 
 ## Libraries and Frameworks
 
