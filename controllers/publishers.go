@@ -64,6 +64,79 @@ func SelectAllPublishers(c *fiber.Ctx) error {
 	return c.JSON(publishers)
 }
 
+// SelectPagePublishers fetches a paginated list of publishers
+func SelectPagePublishers(c *fiber.Ctx) error {
+	// Get query parameters for pagination
+	page := c.QueryInt("page", 1) // Default to page 1
+	if page < 1 {
+		page = 1
+	}
+	limit := c.QueryInt("limit", 10) // Default to 10 records per page
+	if limit < 1 {
+		limit = 10
+	}
+
+	offset := (page - 1) * limit
+
+	query := `
+		SELECT publisher_code, publisher_type_id, publisher_name, contact_name1, contact_name2, 
+		       email, phone1, phone2, address, district, province, zip_code, 
+			   note, update_by, update_date, id_status
+		FROM tb_publisher
+		WHERE is_delete = 0
+		ORDER BY update_date DESC
+		OFFSET @Offset ROWS
+		FETCH NEXT @Limit ROWS ONLY
+	`
+
+	rows, err := config.DB.Query(query,
+		sql.Named("Offset", offset),
+		sql.Named("Limit", limit),
+	)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch publishers"})
+	}
+	defer rows.Close()
+
+	var publishers []models.Publisher
+
+	for rows.Next() {
+		var publisher models.Publisher
+		if err := rows.Scan(
+			&publisher.PublisherCode, &publisher.PublisherTypeID, &publisher.PublisherName,
+			&publisher.ContactName1, &publisher.ContactName2,
+			&publisher.Email, &publisher.Phone1, &publisher.Phone2,
+			&publisher.Address, &publisher.District, &publisher.Province, &publisher.ZipCode,
+			&publisher.Note, &publisher.UpdateBy, &publisher.UpdateDate, &publisher.IDStatus,
+		); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to read data"})
+		}
+		publishers = append(publishers, publisher)
+	}
+
+	// Count total records
+	var total int
+	countQuery := `
+		SELECT COUNT(*)
+		FROM tb_publisher
+		WHERE is_delete = 0
+	`
+	err = config.DB.QueryRow(countQuery).Scan(&total)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to count records"})
+	}
+
+	// Prepare response
+	response := fiber.Map{
+		"page":       page,
+		"limit":      limit,
+		"total":      total,
+		"publishers": publishers,
+	}
+
+	return c.JSON(response)
+}
+
 // Select Publisher By ID
 func SelectPublisherByID(c *fiber.Ctx) error {
 	publisherID := c.Params("id")

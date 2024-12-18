@@ -37,7 +37,8 @@ func RegisterV1Routes(app *fiber.App, db *sql.DB) {
 	// Group สำหรับ Publisher API
 	publishers := protected.Group("/publishers")
 	publishers.Post("/insert", controllers.InsertPublisher)           // เพิ่ม Publisher
-	publishers.Get("/select/all", controllers.SelectAllPublishers)    // ดึงข้อมูล Publisher ทั้งหมด
+	publishers.Get("/select/all", controllers.SelectAllPublishers)    // ดึงข้อมูล Publisher ทั้งหมด (ไม่มี Paging)
+	publishers.Get("/select/page", controllers.SelectPagePublishers)  // ดึงข้อมูล Publisher ทั้งหมด (รองรับ Paging)
 	publishers.Get("/select/:id", controllers.SelectPublisherByID)    // ดึงข้อมูล Publisher ตาม ID
 	publishers.Put("/update/:id", controllers.UpdatePublisherByID)    // อัปเดต Publisher ตาม ID
 	publishers.Put("/delete/:id", controllers.DeletePublisherByID)    // เปลี่ยน is_delete = 1
