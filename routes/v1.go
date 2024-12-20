@@ -43,4 +43,14 @@ func RegisterV1Routes(app *fiber.App, db *sql.DB) {
 	publishers.Put("/update/:id", controllers.UpdatePublisherByID)    // อัปเดต Publisher ตาม ID
 	publishers.Put("/delete/:id", controllers.DeletePublisherByID)    // เปลี่ยน is_delete = 1
 	publishers.Delete("/remove/:id", controllers.RemovePublisherByID) // ลบข้อมูลจริง
+
+	// Group สำหรับ Publisher Type API
+	publisherTypes := protected.Group("/publishertype")
+	publisherTypes.Post("/insert", controllers.InsertPublisherType)           // เพิ่ม Publisher Type
+	publisherTypes.Get("/select/all", controllers.SelectAllPublisherTypes)    // ดึงข้อมูล Publisher Type ทั้งหมด
+	publisherTypes.Get("/select/page", controllers.SelectPagePublisherTypes)  // ดึงข้อมูล Publisher Type แบบ Paging
+	publisherTypes.Get("/select/:id", controllers.SelectPublisherTypeByID)    // ดึงข้อมูล Publisher Type ตาม ID
+	publisherTypes.Put("/update/:id", controllers.UpdatePublisherTypeByID)    // อัปเดต Publisher Type ตาม ID
+	publisherTypes.Put("/delete/:id", controllers.DeletePublisherTypeByID)    // เปลี่ยน is_delete = 1
+	publisherTypes.Delete("/remove/:id", controllers.RemovePublisherTypeByID) // ลบข้อมูลจริง
 }

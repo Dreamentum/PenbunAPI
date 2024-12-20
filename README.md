@@ -1,7 +1,15 @@
 
-# PenbunAPI v1.4.2
+# PenbunAPI v1.4.3
 
 PenbunAPI is a RESTful API designed to manage the distribution and supply of books and stationery. It provides robust features for inventory management, order processing, and user authentication using JWT.
+
+## **Features**
+
+- **Authentication**: รองรับ JWT-based Authentication สำหรับ API ที่ต้องการความปลอดภัย
+- **Publisher Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Publisher
+- **Publisher Type Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Publisher Type
+- **Paging**: รองรับการดึงข้อมูลแบบแบ่งหน้า (Pagination) สำหรับ Publisher และ Publisher Type
+- **Logging**: จัดการบันทึกข้อมูล Log สำหรับ Audit
 
 ## Previous Version
 - **Authentication**: Secure login with JWT-based authentication.
@@ -19,14 +27,55 @@ PenbunAPI is a RESTful API designed to manage the distribution and supply of boo
   - Remove Publisher (hard delete from the database)
 - **Introduced transaction handling (`Rollback`, `Panic`) for critical operations to ensure data consistency.
 - **Enhanced API structure for improved modularity and separation of concerns.
-
-## What's New in v1.4.2
-
 - Added Paging support for retrieving Publisher data.
   - Route: /api/v1/protected/publishers/select/page
   - Query Parameters: ?page=<page_number>&limit=<items_per_page>
 
-## Updated Project Structure
+## What's New in v1.4.3
+
+### **Publisher API**
+1. เพิ่มฟังก์ชันใหม่:
+   - Insert Publisher
+   - Select All Publishers
+   - Select Publisher By ID
+   - Select Publishers with Paging
+   - Update Publisher By ID
+   - Soft Delete Publisher (is_delete)
+   - Hard Delete Publisher
+
+2. Routing ใหม่สำหรับ Publisher:
+   - `/api/v1/protected/publishers/insert`
+   - `/api/v1/protected/publishers/select/all`
+   - `/api/v1/protected/publishers/select/page`
+   - `/api/v1/protected/publishers/select/:id`
+   - `/api/v1/protected/publishers/update/:id`
+   - `/api/v1/protected/publishers/delete/:id`
+   - `/api/v1/protected/publishers/remove/:id`
+
+---
+
+### **Publisher Type API**
+1. เพิ่มฟังก์ชันใหม่:
+   - Insert Publisher Type
+   - Select All Publisher Types
+   - Select Publisher Type By ID
+   - Select Publisher Types with Paging
+   - Update Publisher Type By ID
+   - Soft Delete Publisher Type (is_delete)
+   - Hard Delete Publisher Type
+
+2. Routing ใหม่สำหรับ Publisher Type:
+   - `/api/v1/protected/publishertype/insert`
+   - `/api/v1/protected/publishertype/select/all`
+   - `/api/v1/protected/publishertype/select/page`
+   - `/api/v1/protected/publishertype/select/:id`
+   - `/api/v1/protected/publishertype/update/:id`
+   - `/api/v1/protected/publishertype/delete/:id`
+   - `/api/v1/protected/publishertype/remove/:id`
+
+---
+
+## Project Structure
 
 ```
 PenbunAPI/
@@ -39,13 +88,15 @@ PenbunAPI/
 ├── controllers/
 │   ├── auth.go           # Authentication endpoints
 │   ├── books.go          # Book management endpoints
-│   └── publishers.go     # Publisher management endpoints
+│   ├── publishers.go     # Publisher management endpoints
+│   ├── publisherType.go  # Publisher Type management endpoints
 │   └── references.go     # Reference management endpoints
 ├── models/
 │   ├── user.go           # User-related structs and logic
 │   ├── book.go           # Book-related structs and logic
-│   ├── bookType.go       # Book Type management endpoints
-│   └── publisher.go      # Publisher-related structs and logic
+│   ├── bookType.go       # Book Type-related structs and logic
+│   ├── publisher.go      # Publisher-related structs and logic
+│   ├── publisherType.go  # Publisher Type-related structs and logic
 │   └── reference.go      # Reference-related structs and logic
 ├── routes/
 │   ├── public.go         # Public API version routes
@@ -59,36 +110,42 @@ PenbunAPI/
 └── go.mod                # Go module file
 ```
 
-## Publisher API Endpoints
+---
 
-### Base Path: `/api/v1/protected/publishers`
+## **API Documentation**
 
-Publisher API Endpoints
+API Endpoints
 -----------------------
 
 ### Base Path: `/api/v1/protected/publishers`
 
-| Method | Endpoint | Description | Required Headers | Body Example |
-| --- | --- | --- | --- | --- |
-| `GET` | `/select/all` | Retrieve all Publishers | `Authorization: Bearer <Token>` | N/A |
-| `GET` | `/select/page` | Retrieve Publishers with Paging | `Authorization: Bearer <Token>` | Query Parameters: `?page=<page_number>&limit=<items_per_page>` |
-| `GET` | `/select/:id` | Retrieve a Publisher by ID | `Authorization: Bearer <Token>` | N/A |
-| `POST` | `/insert` | Add a new Publisher | `Authorization: Bearer <Token>` | `{ "publisher_type_id": "PUBT001", "publisher_name": "Publisher Name", "contact_name1": "John Doe", ... }` |
-| `PUT` | `/update/:id` | Update a Publisher by ID | `Authorization: Bearer <Token>` | `{ "publisher_name": "Updated Name", "contact_name1": "Jane Doe", ... }` |
-| `PUT` | `/delete/:id` | Soft delete a Publisher (`is_delete = 1`) | `Authorization: Bearer <Token>` | N/A |
-| `DELETE` | `/remove/:id` | Hard delete a Publisher | `Authorization: Bearer <Token>` | N/A |
+### **Publisher API**
 
-## All Example in Postman
+| Method   | Endpoint                  | Description                                | Required Headers           | Body Example                                                                                           |
+|----------|---------------------------|--------------------------------------------|----------------------------|-------------------------------------------------------------------------------------------------------|
+| `POST`   | `/publishers/insert`      | Insert a new Publisher                    | `Authorization: Bearer <Token>` | `{ "publisher_name": "Publisher Name", "publisher_type_id": "PUBT001", "contact_name1": "John Doe", ... }` |
+| `GET`    | `/publishers/select/all`  | Select all Publishers                     | `Authorization: Bearer <Token>` | N/A                                                                                                   |
+| `GET`    | `/publishers/select/page` | Select Publishers with Paging             | `Authorization: Bearer <Token>` | Query: `page` (int), `limit` (int)                                                                    |
+| `GET`    | `/publishers/select/:id`  | Select a Publisher by ID                  | `Authorization: Bearer <Token>` | N/A                                                                                                   |
+| `PUT`    | `/publishers/update/:id`  | Update a Publisher by ID                  | `Authorization: Bearer <Token>` | `{ "publisher_name": "Updated Name", "contact_name1": "Jane Doe", ... }`                             |
+| `PUT`    | `/publishers/delete/:id`  | Soft delete a Publisher (`is_delete = 1`) | `Authorization: Bearer <Token>` | N/A                                                                                                   |
+| `DELETE` | `/publishers/remove/:id`  | Hard delete a Publisher                   | `Authorization: Bearer <Token>` | N/A                                                                                                   |
 
-| Method | Endpoint | Description | Header | Body (Example) |
-| --- | --- | --- | --- | --- |
-| `GET` | `/api/v1/protected/publishers/select/all` | ดึงข้อมูล Publisher ทั้งหมด | `Authorization: Bearer <Token>` | N/A |
-| `GET` | `/api/v1/protected/publishers/select/page` | ดึงข้อมูล Publisher แบบ Paging | `Authorization: Bearer <Token>` | Query Parameters: `?page=1&limit=10` |
-| `GET` | `/api/v1/protected/publishers/select/:id` | ดึงข้อมูล Publisher ตาม ID | `Authorization: Bearer <Token>` | N/A |
-| `POST` | `/api/v1/protected/publishers/insert` | เพิ่ม Publisher ใหม่ | `Authorization: Bearer <Token>` | `{ "publisher_type_id": "PUBT001", "publisher_name": "Publisher Name", "contact_name1": "John Doe", ... }` |
-| `PUT` | `/api/v1/protected/publishers/update/:id` | อัปเดตข้อมูล Publisher ตาม ID | `Authorization: Bearer <Token>` | `{ "publisher_name": "Updated Name", "contact_name1": "Jane Doe", ... }` |
-| `PUT` | `/api/v1/protected/publishers/delete/:id` | เปลี่ยน is_delete = 1 (Soft Delete) | `Authorization: Bearer <Token>` | N/A |
-| `DELETE` | `/api/v1/protected/publishers/remove/:id` | ลบข้อมูล Publisher ออกจากฐานข้อมูลจริง (Hard Delete) | `Authorization: Bearer <Token>` | N/A |
+### Base Path: `/api/v1/protected/publishertype`
+
+### **Publisher Type API**
+
+| Method   | Endpoint                      | Description                                | Required Headers           | Body Example                                                                                           |
+|----------|-------------------------------|--------------------------------------------|----------------------------|-------------------------------------------------------------------------------------------------------|
+| `POST`   | `/publishertype/insert`       | Insert a new Publisher Type               | `Authorization: Bearer <Token>` | `{ "type_name": "Bookstore", "description": "Retail bookstore type", ... }`                          |
+| `GET`    | `/publishertype/select/all`   | Select all Publisher Types                | `Authorization: Bearer <Token>` | N/A                                                                                                   |
+| `GET`    | `/publishertype/select/page`  | Select Publisher Types with Paging        | `Authorization: Bearer <Token>` | Query: `page` (int), `limit` (int)                                                                    |
+| `GET`    | `/publishertype/select/:id`   | Select a Publisher Type by ID             | `Authorization: Bearer <Token>` | N/A                                                                                                   |
+| `PUT`    | `/publishertype/update/:id`   | Update a Publisher Type by ID             | `Authorization: Bearer <Token>` | `{ "type_name": "Wholesale", "description": "Wholesale distributor type", ... }`                     |
+| `PUT`    | `/publishertype/delete/:id`   | Soft delete a Publisher Type (`is_delete = 1`) | `Authorization: Bearer <Token>` | N/A                                                                                                   |
+| `DELETE` | `/publishertype/remove/:id`   | Hard delete a Publisher Type              | `Authorization: Bearer <Token>` | N/A                                                                                                   |
+
+---
 
 ## Libraries and Frameworks
 
@@ -144,6 +201,29 @@ Publisher API Endpoints
    ```bash
    go run main.go
    ```
+
+5. **Optional**: Create a new user using `bcrypt` for password hashing.
+   Install `htpasswd`:
+   ```bash
+   sudo apt update
+   sudo apt install apache2-utils -y
+   ```
+   Generate `bcrypt` hash:
+   ```bash
+   htpasswd -nbBC 10 username password
+   ```
+   Sample output:
+   ```
+   username:$2y$10$KfQ8mU5VvJ5QGk7/LN9OeOujOPEwLjD3Oo4yEWDwEpr6/LkfuPWoK
+   ```
+   Insert into Database:
+   ```sql
+   DELETE FROM tb_users;
+   DBCC CHECKIDENT ('tb_users', RESEED, 0);
+   INSERT INTO tb_users (user_name, user_password)
+   VALUES ('username', '$2y$10$KfQ8mU5VvJ5QGk7/LN9OeOujOPEwLjD3Oo4yEWDwEpr6/LkfuPWoK');
+   ```
+
 
 ## License
 
