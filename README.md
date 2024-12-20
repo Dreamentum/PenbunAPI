@@ -18,6 +18,7 @@ PenbunAPI is a RESTful API designed to manage the distribution and supply of boo
 - **Logging**: Transaction logging for audit purposes.
 - **Versioned API**: Support for multiple API versions (e.g., v1, v2).
 - **Graceful Shutdown**: Handles safe server shutdown for cleanup and database disconnections.
+- **Publisher Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Publisher
 - **Added comprehensive management for `tb_publisher` including:
   - Insert Publisher
   - Select All Publishers
@@ -32,27 +33,6 @@ PenbunAPI is a RESTful API designed to manage the distribution and supply of boo
   - Query Parameters: ?page=<page_number>&limit=<items_per_page>
 
 ## What's New in v1.4.3
-
-### **Publisher API**
-1. เพิ่มฟังก์ชันใหม่:
-   - Insert Publisher
-   - Select All Publishers
-   - Select Publisher By ID
-   - Select Publishers with Paging
-   - Update Publisher By ID
-   - Soft Delete Publisher (is_delete)
-   - Hard Delete Publisher
-
-2. Routing ใหม่สำหรับ Publisher:
-   - `/api/v1/protected/publishers/insert`
-   - `/api/v1/protected/publishers/select/all`
-   - `/api/v1/protected/publishers/select/page`
-   - `/api/v1/protected/publishers/select/:id`
-   - `/api/v1/protected/publishers/update/:id`
-   - `/api/v1/protected/publishers/delete/:id`
-   - `/api/v1/protected/publishers/remove/:id`
-
----
 
 ### **Publisher Type API**
 1. เพิ่มฟังก์ชันใหม่:
