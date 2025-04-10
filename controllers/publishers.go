@@ -4,7 +4,6 @@ import (
 	"PenbunAPI/config"
 	"PenbunAPI/models"
 	"database/sql"
-	"log"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -202,24 +201,20 @@ func InsertPublisher(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"message": "Publisher added successfully"})
 }
 
-// Update Publisher By ID
 // UpdatePublisherByID updates a publisher's details by its ID
 func UpdatePublisherByID(c *fiber.Ctx) error {
-	publisherID := c.Params("id") // Get the publisher ID from the route parameters
+	publisherID := c.Params("id")
 
 	var updatedPublisher models.Publisher
 	if err := c.BodyParser(&updatedPublisher); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
 	}
 
-	// Begin a transaction
 	tx, err := config.DB.Begin()
 	if err != nil {
-		log.Println("[ERROR] Failed to begin transaction:", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Database transaction error"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to begin transaction"})
 	}
 
-	// Defer rollback in case of failure
 	defer func() {
 		if p := recover(); p != nil {
 			tx.Rollback()
@@ -229,24 +224,24 @@ func UpdatePublisherByID(c *fiber.Ctx) error {
 
 	query := `
 		UPDATE tb_publisher
-		SET publisher_type_id = @PublisherTypeID,
-		    publisher_name = @PublisherName,
-		    contact_name1 = @ContactName1,
-		    contact_name2 = @ContactName2,
-		    email = @Email,
-		    phone1 = @Phone1,
-		    phone2 = @Phone2,
-		    address = @Address,
-		    district = @District,
-		    province = @Province,
-		    zip_code = @ZipCode,
-		    note = @Note,
-		    update_by = @UpdateBy
+		SET
+			publisher_type_id = @PublisherTypeID,
+			publisher_name = COALESCE(NULLIF(@PublisherName, ''), publisher_name),
+			contact_name1 = @ContactName1,
+			contact_name2 = @ContactName2,
+			email = @Email,
+			phone1 = @Phone1,
+			phone2 = @Phone2,
+			address = @Address,
+			district = @District,
+			province = @Province,
+			zip_code = COALESCE(NULLIF(@ZipCode, ''), zip_code),
+			note = @Note,
+			update_by = @UpdateBy
 		WHERE publisher_code = @PublisherID AND is_delete = 0
 	`
 
-	_, err = tx.Exec(
-		query,
+	_, err = tx.Exec(query,
 		sql.Named("PublisherTypeID", updatedPublisher.PublisherTypeID),
 		sql.Named("PublisherName", updatedPublisher.PublisherName),
 		sql.Named("ContactName1", updatedPublisher.ContactName1),
@@ -264,25 +259,17 @@ func UpdatePublisherByID(c *fiber.Ctx) error {
 	)
 
 	if err != nil {
-		log.Println("[ERROR] Failed to execute update query:", err)
 		tx.Rollback()
-		return c.JSON(fiber.Map{"error": "Failed to update publisher"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update publisher"})
 	}
 
-	// Commit the transaction
 	if err := tx.Commit(); err != nil {
-		log.Println("[ERROR] Failed to commit transaction:", err)
-		return c.JSON(fiber.Map{"error": "Transaction commit failed"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to commit transaction"})
 	}
 
 	return c.JSON(fiber.Map{
-		"message": "Publisher updated successfully",
-		"data": map[string]interface{}{
-			"publisher_id":     publisherID,
-			"publisher_name":   updatedPublisher.PublisherName,
-			"updated_by":       updatedPublisher.UpdateBy,
-			"update_timestamp": updatedPublisher.UpdateDate,
-		},
+		"message":      "Publisher updated successfully",
+		"publisher_id": publisherID,
 	})
 }
 
