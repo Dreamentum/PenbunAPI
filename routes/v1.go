@@ -53,4 +53,15 @@ func RegisterV1Routes(app *fiber.App, db *sql.DB) {
 	publisherTypes.Put("/update/:id", controllers.UpdatePublisherTypeByID)    // อัปเดต Publisher Type ตาม ID
 	publisherTypes.Put("/delete/:id", controllers.DeletePublisherTypeByID)    // เปลี่ยน is_delete = 1
 	publisherTypes.Delete("/remove/:id", controllers.RemovePublisherTypeByID) // ลบข้อมูลจริง
+
+	// Group สำหรับ Customer Type API
+	customerTypes := protected.Group("/customertype")
+	customerTypes.Post("/insert", controllers.InsertCustomerType)
+	customerTypes.Get("/select/all", controllers.SelectAllCustomerTypes)
+	customerTypes.Get("/select/page", controllers.SelectPageCustomerTypes)
+	customerTypes.Get("/select/:id", controllers.SelectCustomerTypeByID)
+	customerTypes.Put("/update/:id", controllers.UpdateCustomerTypeByID)
+	customerTypes.Put("/delete/:id", controllers.DeleteCustomerTypeByID)
+	customerTypes.Delete("/remove/:id", controllers.RemoveCustomerTypeByID)
+
 }

@@ -1,5 +1,5 @@
 
-# PenbunAPI v1.4.3
+# PenbunAPI v1.5.1
 
 PenbunAPI is a RESTful API designed to manage the distribution and supply of books and stationery. It provides robust features for inventory management, order processing, and user authentication using JWT.
 
@@ -11,6 +11,36 @@ PenbunAPI is a RESTful API designed to manage the distribution and supply of boo
 - **Paging**: รองรับการดึงข้อมูลแบบแบ่งหน้า (Pagination) สำหรับ Publisher และ Publisher Type
 - **Logging**: จัดการบันทึกข้อมูล Log สำหรับ Audit
 
+
+## Fundamental function
+
+> ฟังก์ชันพื้นฐานที่ PenbunAPI ทุก Master Data จะต้องมี ครบ 7 Function โดยโครงสร้างจะทำงานและมีลักษณะเหมือนกันทั้งหมด เพื่อให้การพัฒนาง่ายต่อการดูแลและขยายในอนาคต
+
+| #  | Function         | Description                                                   |
+|----|-----------------|---------------------------------------------------------------|
+| 1  | Select All       | ดึงข้อมูลทั้งหมด โดย where `is_delete = 0`                  |
+| 2  | Select By Paging | รองรับ Query Parameter `?page=<number>&limit=<number>` เพื่อแบ่งหน้า |
+| 3  | Select By ID     | ดึงข้อมูลตาม Primary Key เช่น `customer_code` หรือ `publisher_code` หรือ `type_id` |
+| 4  | Insert           | เพิ่มข้อมูลใหม่ โดย Insert เฉพาะ field ที่จำเป็น         |
+| 5  | Update By ID     | แก้ไขข้อมูลตาม ID โดยไม่แก้ไขค่า Auto Generate เช่น Code ต่าง ๆ |
+| 6  | Delete By ID     | Soft Delete โดย Update `is_delete = 1` เท่านั้น             |
+| 7  | Remove By ID     | Hard Delete การลบข้อมูลออกจาก Database จริง ๆ              |
+
+---
+
+> หมายเหตุเพิ่มเติม:
+- ทุกฟังก์ชันที่เกี่ยวข้องกับ Insert / Update / Delete จะมีการใช้ Transaction (Rollback / Panic) ป้องกันข้อมูลไม่ให้เสียหายหากเกิด Error
+- ทุก Select จะต้องเช็ค `is_delete = 0` เสมอ
+- ฟังก์ชัน Select By Paging จะใช้ Query Parameters:
+```
+?page=1&limit=20
+```
+ตัวอย่าง Route:
+```
+/api/v1/protected/publishers/select/page
+/api/v1/protected/customertype/select/page
+```
+
 ## Previous Version
 - **Authentication**: Secure login with JWT-based authentication.
 - **Inventory Management**: CRUD operations for books, book types, and references.
@@ -19,39 +49,27 @@ PenbunAPI is a RESTful API designed to manage the distribution and supply of boo
 - **Versioned API**: Support for multiple API versions (e.g., v1, v2).
 - **Graceful Shutdown**: Handles safe server shutdown for cleanup and database disconnections.
 - **Publisher Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Publisher
-- **Added comprehensive management for `tb_publisher` including:
-  - Insert Publisher
-  - Select All Publishers
-  - Select Publisher by ID
-  - Update Publisher by ID
-  - Delete Publisher (soft delete by updating `is_delete = 1`)
-  - Remove Publisher (hard delete from the database)
-- **Introduced transaction handling (`Rollback`, `Panic`) for critical operations to ensure data consistency.
-- **Enhanced API structure for improved modularity and separation of concerns.
-- Added Paging support for retrieving Publisher data.
-  - Route: /api/v1/protected/publishers/select/page
-  - Query Parameters: ?page=<page_number>&limit=<items_per_page>
 
-## What's New in v1.4.3
+## What's New in v1.5.1
 
 ### **Publisher Type API**
-1. เพิ่มฟังก์ชันใหม่:
-   - Insert Publisher Type
-   - Select All Publisher Types
-   - Select Publisher Type By ID
-   - Select Publisher Types with Paging
-   - Update Publisher Type By ID
-   - Soft Delete Publisher Type (is_delete)
-   - Hard Delete Publisher Type
+1. Added comprehensive management for `tb_customer_type` including:
+   - Insert Customer Type
+   - Select All Customer Types
+   - Select Customer Type By ID
+   - Select Customer Types with Paging
+   - Update Customer Type By ID
+   - Soft Delete Customer Type (is_delete)
+   - Hard Delete Customer Type
 
-2. Routing ใหม่สำหรับ Publisher Type:
-   - `/api/v1/protected/publishertype/insert`
-   - `/api/v1/protected/publishertype/select/all`
-   - `/api/v1/protected/publishertype/select/page`
-   - `/api/v1/protected/publishertype/select/:id`
-   - `/api/v1/protected/publishertype/update/:id`
-   - `/api/v1/protected/publishertype/delete/:id`
-   - `/api/v1/protected/publishertype/remove/:id`
+2. Added Routing for Customer Type:
+   - `/api/v1/protected/customertype/insert`
+   - `/api/v1/protected/customertype/select/all`
+   - `/api/v1/protected/customertype/select/page`
+   - `/api/v1/protected/customertype/select/:id`
+   - `/api/v1/protected/customertype/update/:id`
+   - `/api/v1/protected/customertype/delete/:id`
+   - `/api/v1/protected/customertype/remove/:id`
 
 ---
 
@@ -70,14 +88,18 @@ PenbunAPI/
 │   ├── books.go          # Book management endpoints
 │   ├── publishers.go     # Publisher management endpoints
 │   ├── publisherType.go  # Publisher Type management endpoints
-│   └── references.go     # Reference management endpoints
+│   ├── references.go     # Reference management endpoints
+│   ├── customer.go       # ✅ NEW
+│   └── customerType.go   # ✅ NEW Customer Type management endpoints
 ├── models/
 │   ├── user.go           # User-related structs and logic
 │   ├── book.go           # Book-related structs and logic
 │   ├── bookType.go       # Book Type-related structs and logic
 │   ├── publisher.go      # Publisher-related structs and logic
 │   ├── publisherType.go  # Publisher Type-related structs and logic
-│   └── reference.go      # Reference-related structs and logic
+│   ├── references.go     # Reference-related structs and logic
+│   ├── customer.go       # ✅ NEW
+│   └── customerType.go   # ✅ NEW Customer Type-related structs and logic
 ├── routes/
 │   ├── public.go         # Public API version routes
 │   ├── v1.go             # API version 1 routes and grouping
@@ -96,6 +118,20 @@ PenbunAPI/
 
 API Endpoints
 -----------------------
+
+# PenbunAPI v1.5.1
+
+### Base Path: `/api/v1/protected/customertype`
+
+| Method   | Endpoint                  | Description                                | Required Headers           | Body Example |
+|----------|---------------------------|--------------------------------------------|----------------------------|-------------------------------------------------------------------------------------------------------|
+| POST   | `/insert`                 | เพิ่ม Customer Type                | `Authorization: Bearer <Token>` | { "type_name": "Wholesale", "description": "Sell for dealer", "update_by": "admin" } |
+| GET    | `/select/all`             | ดึงข้อมูลทั้งหมด                  | `Authorization: Bearer <Token>` | - |
+| GET    | `/select/page`            | ดึงแบบ Paging                     | `Authorization: Bearer <Token>` | - (Parameter ?page=1&limit=20) |
+| GET    | `/select/:id`             | ดึงจาก customer_type_id           | `Authorization: Bearer <Token>` | - |
+| PUT    | `/update/:id`             | แก้ไข Customer Type                | `Authorization: Bearer <Token>` | { "type_name": "Retail", "description": "Normal retail customer", "update_by": "admin" } |
+| PUT    | `/delete/:id`             | Soft Delete (is_delete = 1)        | `Authorization: Bearer <Token>` | - |
+| DELETE | `/remove/:id`             | ลบข้อมูลจริง                      | `Authorization: Bearer <Token>` | - |
 
 ### Base Path: `/api/v1/protected/publishers`
 
@@ -126,6 +162,7 @@ API Endpoints
 | `DELETE` | `/publishertype/remove/:id`   | Hard delete a Publisher Type              | `Authorization: Bearer <Token>` | N/A                                                                                                   |
 
 ---
+
 
 ## Libraries and Frameworks
 
