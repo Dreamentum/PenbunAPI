@@ -1,5 +1,5 @@
 
-# PenbunAPI v1.5.1
+# PenbunAPI v1.5.2
 
 PenbunAPI is a RESTful API designed to manage the distribution and supply of books and stationery. It provides robust features for inventory management, order processing, and user authentication using JWT.
 
@@ -8,7 +8,9 @@ PenbunAPI is a RESTful API designed to manage the distribution and supply of boo
 - **Authentication**: รองรับ JWT-based Authentication สำหรับ API ที่ต้องการความปลอดภัย
 - **Publisher Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Publisher
 - **Publisher Type Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Publisher Type
-- **Paging**: รองรับการดึงข้อมูลแบบแบ่งหน้า (Pagination) สำหรับ Publisher และ Publisher Type
+- **Customer Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Customer
+- **Customer Type Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Customer Type
+- **Paging**: รองรับการดึงข้อมูลแบบแบ่งหน้า (Pagination)
 - **Logging**: จัดการบันทึกข้อมูล Log สำหรับ Audit
 
 
@@ -50,26 +52,26 @@ PenbunAPI is a RESTful API designed to manage the distribution and supply of boo
 - **Graceful Shutdown**: Handles safe server shutdown for cleanup and database disconnections.
 - **Publisher Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Publisher
 
-## What's New in v1.5.1
+## What's New in v1.5.2
 
 ### **Publisher Type API**
-1. Added comprehensive management for `tb_customer_type` including:
-   - Insert Customer Type
-   - Select All Customer Types
-   - Select Customer Type By ID
-   - Select Customer Types with Paging
-   - Update Customer Type By ID
-   - Soft Delete Customer Type (is_delete)
-   - Hard Delete Customer Type
+1. Added comprehensive management for `tb_customer` including:
+   - Insert Customer 
+   - Select All Customer 
+   - Select Customer By ID
+   - Select Customer with Paging
+   - Update Customer By ID
+   - Soft Delete Customer (is_delete)
+   - Hard Delete Customer
 
 2. Added Routing for Customer Type:
-   - `/api/v1/protected/customertype/insert`
-   - `/api/v1/protected/customertype/select/all`
-   - `/api/v1/protected/customertype/select/page`
-   - `/api/v1/protected/customertype/select/:id`
-   - `/api/v1/protected/customertype/update/:id`
-   - `/api/v1/protected/customertype/delete/:id`
-   - `/api/v1/protected/customertype/remove/:id`
+   - `/api/v1/protected/customer/insert`
+   - `/api/v1/protected/customer/select/all`
+   - `/api/v1/protected/customer/select/page`
+   - `/api/v1/protected/customer/select/:id`
+   - `/api/v1/protected/customer/update/:id`
+   - `/api/v1/protected/customer/delete/:id`
+   - `/api/v1/protected/customer/remove/:id`
 
 ---
 
@@ -89,8 +91,8 @@ PenbunAPI/
 │   ├── publishers.go     # Publisher management endpoints
 │   ├── publisherType.go  # Publisher Type management endpoints
 │   ├── references.go     # Reference management endpoints
-│   ├── customer.go       # ✅ NEW
-│   └── customerType.go   # ✅ NEW Customer Type management endpoints
+│   ├── customer.go       # ✅ NEW Customer management endpoints
+│   └── customerType.go   # Customer Type management endpoints
 ├── models/
 │   ├── user.go           # User-related structs and logic
 │   ├── book.go           # Book-related structs and logic
@@ -98,8 +100,8 @@ PenbunAPI/
 │   ├── publisher.go      # Publisher-related structs and logic
 │   ├── publisherType.go  # Publisher Type-related structs and logic
 │   ├── references.go     # Reference-related structs and logic
-│   ├── customer.go       # ✅ NEW
-│   └── customerType.go   # ✅ NEW Customer Type-related structs and logic
+│   ├── customer.go       # ✅ NEW Customer management endpoints
+│   └── customerType.go   # Customer Type-related structs and logic
 ├── routes/
 │   ├── public.go         # Public API version routes
 │   ├── v1.go             # API version 1 routes and grouping
@@ -119,7 +121,20 @@ PenbunAPI/
 API Endpoints
 -----------------------
 
-# PenbunAPI v1.5.1
+# PenbunAPI v1.5.2
+
+### Base Path: `/api/v1/protected/customer`
+
+
+| Method   | Endpoint                     | Description                                 | Required Headers                  | Body Example |
+|----------|--------------------------------|---------------------------------------------|----------------------------------|--------------|
+| POST     | `/insert`                     | เพิ่ม Customer ใหม่                        | `Authorization: Bearer <Token>`  | `{ "customer_name": "Siam Bookstore", "biz_id": "BIZ001", "customer_type_id": "CUTMT0001", "first_name": "Somchai", "last_name": "Jaidee", "phone1": "0999999999", "update_by": "admin" }` |
+| GET      | `/select/all`                 | ดึงข้อมูล Customer ทั้งหมด               | `Authorization: Bearer <Token>`  | N/A          |
+| GET      | `/select/page`                | ดึงข้อมูล Customer แบบ Paging             | `Authorization: Bearer <Token>`  | Query: `?page=1&limit=20` |
+| GET      | `/select/:id`                 | ดึงข้อมูล Customer ตาม customer_code     | `Authorization: Bearer <Token>`  | N/A          |
+| PUT      | `/update/:id`                 | อัพเดท Customer ตาม customer_code        | `Authorization: Bearer <Token>`  | `{ "customer_name": "Siam Bookstore Updated", "first_name": "Somchai", "last_name": "Jaidee", "update_by": "admin" }` |
+| PUT      | `/delete/:id`                 | Soft Delete เปลี่ยน `is_delete = 1`      | `Authorization: Bearer <Token>`  | N/A          |
+| DELETE   | `/remove/:id`                 | Hard Delete ลบข้อมูลจริงออกจาก Database  | `Authorization: Bearer <Token>`  | N/A          |
 
 ### Base Path: `/api/v1/protected/customertype`
 

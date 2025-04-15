@@ -64,4 +64,14 @@ func RegisterV1Routes(app *fiber.App, db *sql.DB) {
 	customerTypes.Put("/delete/:id", controllers.DeleteCustomerTypeByID)
 	customerTypes.Delete("/remove/:id", controllers.RemoveCustomerTypeByID)
 
+	// Group สำหรับ Customer API
+	customer := protected.Group("/customer")
+	customer.Post("/insert", controllers.InsertCustomer)           // เพิ่ม Customer
+	customer.Get("/select/all", controllers.SelectAllCustomers)    // ดึงข้อมูล Customer ทั้งหมด (ไม่มี Paging)
+	customer.Get("/select/page", controllers.SelectPageCustomers)  // ดึงข้อมูล Customer ทั้งหมด (รองรับ Paging)
+	customer.Get("/select/:id", controllers.SelectCustomerByID)    // ดึงข้อมูล Customer ตาม ID
+	customer.Put("/update/:id", controllers.UpdateCustomerByID)    // อัปเดต Customer ตาม ID
+	customer.Put("/delete/:id", controllers.DeleteCustomerByID)    // เปลี่ยน is_delete = 1
+	customer.Delete("/remove/:id", controllers.RemoveCustomerByID) // ลบข้อมูลจริง
+
 }

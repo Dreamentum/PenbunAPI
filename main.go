@@ -55,7 +55,7 @@ func main() {
 		StrictRouting:     true,
 		EnablePrintRoutes: true,
 		ServerHeader:      "Fiber",
-		AppName:           "PENBUN API v1.4.3",
+		AppName:           "PENBUN API v1.5.2",
 	})
 
 	// ใช้ JWTMiddleware ระดับ Global
@@ -97,7 +97,7 @@ func main() {
 
 	// รอให้ Fiber Shutdown อย่างปลอดภัย
 	if err := app.Shutdown(); err != nil {
-		fmt.Println("Error shutting down server: %v\n", err)
+		fmt.Printf("Error shutting down server: %v\n", err)
 	}
 
 	// ปิดฐานข้อมูลหรือกระบวนการที่ค้างอยู่
