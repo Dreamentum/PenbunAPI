@@ -74,4 +74,14 @@ func RegisterV1Routes(app *fiber.App, db *sql.DB) {
 	customer.Put("/delete/:id", controllers.DeleteCustomerByID)    // เปลี่ยน is_delete = 1
 	customer.Delete("/remove/:id", controllers.RemoveCustomerByID) // ลบข้อมูลจริง
 
+	// Group สำหรับ Book Type API
+	bookTypes := protected.Group("/booktype")
+	bookTypes.Post("/insert", controllers.InsertBookType)
+	bookTypes.Get("/select/all", controllers.SelectAllBookTypes)
+	bookTypes.Get("/select/page", controllers.SelectPageBookTypes)
+	bookTypes.Get("/select/:id", controllers.SelectBookTypeByID)
+	bookTypes.Put("/update/:id", controllers.UpdateBookTypeByID)
+	bookTypes.Put("/delete/:id", controllers.DeleteBookTypeByID)
+	bookTypes.Delete("/remove/:id", controllers.RemoveBookTypeByID)
+
 }

@@ -1,6 +1,11 @@
 package models
 
 type BookType struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
+	BookTypeID  string  `json:"book_type_id"`
+	TypeName    string  `json:"type_name"`
+	Description *string `json:"description"`
+	UpdateBy    string  `json:"update_by"`
+	UpdateDate  string  `json:"update_date"`
+	IDStatus    bool    `json:"id_status"`
+	IsDelete    bool    `json:"is_delete"`
 }

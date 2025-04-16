@@ -1,20 +1,24 @@
 
-# PenbunAPI v1.5.2
+# 🅿️ PenbunAPI v1.5.3
 
 PenbunAPI is a RESTful API designed to manage the distribution and supply of books and stationery. It provides robust features for inventory management, order processing, and user authentication using JWT.
 
-## **Features**
+## 🚀 **Features**
 
 - **Authentication**: รองรับ JWT-based Authentication สำหรับ API ที่ต้องการความปลอดภัย
 - **Publisher Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Publisher
 - **Publisher Type Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Publisher Type
 - **Customer Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Customer
 - **Customer Type Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Customer Type
+- **Book Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Customer
+- **Book Type Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Customer Type
 - **Paging**: รองรับการดึงข้อมูลแบบแบ่งหน้า (Pagination)
 - **Logging**: จัดการบันทึกข้อมูล Log สำหรับ Audit
+- **Versioned**: API (v1, v2)
+- **Graceful Shutdown**
 
 
-## Fundamental function
+## ⚙️ **Fundamental Functions**
 
 > ฟังก์ชันพื้นฐานที่ PenbunAPI ทุก Master Data จะต้องมี ครบ 7 Function โดยโครงสร้างจะทำงานและมีลักษณะเหมือนกันทั้งหมด เพื่อให้การพัฒนาง่ายต่อการดูแลและขยายในอนาคต
 
@@ -43,7 +47,7 @@ PenbunAPI is a RESTful API designed to manage the distribution and supply of boo
 /api/v1/protected/customertype/select/page
 ```
 
-## Previous Version
+## ↩️ **Previous Version**
 - **Authentication**: Secure login with JWT-based authentication.
 - **Inventory Management**: CRUD operations for books, book types, and references.
 - **Order and Delivery**: Manage orders and deliveries.
@@ -51,31 +55,32 @@ PenbunAPI is a RESTful API designed to manage the distribution and supply of boo
 - **Versioned API**: Support for multiple API versions (e.g., v1, v2).
 - **Graceful Shutdown**: Handles safe server shutdown for cleanup and database disconnections.
 - **Publisher Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Publisher
+- **Customer Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Customer
 
-## What's New in v1.5.2
+## 🆕 **What's New in v1.5.3**
 
-### **Publisher Type API**
+### **Book Type API**
 1. Added comprehensive management for `tb_customer` including:
-   - Insert Customer 
-   - Select All Customer 
-   - Select Customer By ID
-   - Select Customer with Paging
-   - Update Customer By ID
-   - Soft Delete Customer (is_delete)
-   - Hard Delete Customer
+   - Insert Book Type 
+   - Select All Book Type 
+   - Select Book Type By ID
+   - Select Book Type with Paging
+   - Update Book Type By ID
+   - Soft Delete Book Type (is_delete)
+   - Hard Delete Book Type
 
-2. Added Routing for Customer Type:
-   - `/api/v1/protected/customer/insert`
-   - `/api/v1/protected/customer/select/all`
-   - `/api/v1/protected/customer/select/page`
-   - `/api/v1/protected/customer/select/:id`
-   - `/api/v1/protected/customer/update/:id`
-   - `/api/v1/protected/customer/delete/:id`
-   - `/api/v1/protected/customer/remove/:id`
+2. Added Routing for Book Type:
+   - `/api/v1/protected/booktype/insert`
+   - `/api/v1/protected/booktype/select/all`
+   - `/api/v1/protected/booktype/select/page`
+   - `/api/v1/protected/booktype/select/:id`
+   - `/api/v1/protected/booktype/update/:id`
+   - `/api/v1/protected/booktype/delete/:id`
+   - `/api/v1/protected/booktype/remove/:id`
 
 ---
 
-## Project Structure
+## 🧩 **Project Structure**
 
 ```
 PenbunAPI/
@@ -91,8 +96,10 @@ PenbunAPI/
 │   ├── publishers.go     # Publisher management endpoints
 │   ├── publisherType.go  # Publisher Type management endpoints
 │   ├── references.go     # Reference management endpoints
-│   ├── customer.go       # ✅ NEW Customer management endpoints
-│   └── customerType.go   # Customer Type management endpoints
+│   ├── customer.go       # Customer management endpoints
+│   ├── customerType.go   # Customer Type management endpoints
+│   ├── book.go           # ✅ Book management endpoints
+│   └── bookType.go       # ✅ Book Type management endpoints
 ├── models/
 │   ├── user.go           # User-related structs and logic
 │   ├── book.go           # Book-related structs and logic
@@ -100,8 +107,8 @@ PenbunAPI/
 │   ├── publisher.go      # Publisher-related structs and logic
 │   ├── publisherType.go  # Publisher Type-related structs and logic
 │   ├── references.go     # Reference-related structs and logic
-│   ├── customer.go       # ✅ NEW Customer management endpoints
-│   └── customerType.go   # Customer Type-related structs and logic
+│   ├── book.go           # ✅ Book management structs and logic
+│   └── bookType.go       # ✅ Book Type management structs and logic
 ├── routes/
 │   ├── public.go         # Public API version routes
 │   ├── v1.go             # API version 1 routes and grouping
@@ -116,15 +123,28 @@ PenbunAPI/
 
 ---
 
-## **API Documentation**
+## 🪛 **API Documentation**
 
 API Endpoints
 -----------------------
 
-# PenbunAPI v1.5.2
+# PenbunAPI v1.5.3
 
-### Base Path: `/api/v1/protected/customer`
+### 📘 Book Type API 
+### Base Path: (`/api/v1/protected/booktype`)
 
+| Method   | Endpoint                      | Description                                  | Required Headers                 | Body Example |
+|----------|-------------------------------|----------------------------------------------|----------------------------------|--------------|
+| `POST`   | `/insert`                     | เพิ่มข้อมูลประเภทหนังสือใหม่               | `Authorization: Bearer <token>` | `{ "type_name": "วิทยาศาสตร์", "description": "หนังสือเกี่ยวกับวิทยาศาสตร์", "update_by": "admin" }` |
+| `GET`    | `/select/all`                 | ดึงข้อมูลทั้งหมด (is_delete = 0)           | `Authorization: Bearer <token>` | — |
+| `GET`    | `/select/page?page=1&limit=10`| ดึงข้อมูลแบบ Paging                         | `Authorization: Bearer <token>` | — |
+| `GET`    | `/select/:id`                 | ดึงข้อมูลประเภทหนังสือตาม ID               | `Authorization: Bearer <token>` | — |
+| `PUT`    | `/update/:id`                 | อัปเดตข้อมูลประเภทหนังสือ                  | `Authorization: Bearer <token>` | `{ "type_name": "วิทย์สุขภาพ", "description": "อัปเดตหมวดวิทยาศาสตร์สุขภาพ", "update_by": "editor" }` |
+| `PUT`    | `/delete/:id`                 | ลบข้อมูลแบบ Soft Delete (`is_delete = 1`)  | `Authorization: Bearer <token>` | — |
+| `DELETE` | `/remove/:id`                 | ลบข้อมูลออกจากฐานข้อมูล (Hard Delete)     | `Authorization: Bearer <token>` | — |
+
+### 👨‍👩‍👧‍👧 Customer API 
+### Base Path: (`/api/v1/protected/customer`)
 
 | Method   | Endpoint                     | Description                                 | Required Headers                  | Body Example |
 |----------|--------------------------------|---------------------------------------------|----------------------------------|--------------|
@@ -136,7 +156,8 @@ API Endpoints
 | PUT      | `/delete/:id`                 | Soft Delete เปลี่ยน `is_delete = 1`      | `Authorization: Bearer <Token>`  | N/A          |
 | DELETE   | `/remove/:id`                 | Hard Delete ลบข้อมูลจริงออกจาก Database  | `Authorization: Bearer <Token>`  | N/A          |
 
-### Base Path: `/api/v1/protected/customertype`
+### 🕺 Customer Type API 
+### Base Path: (`/api/v1/protected/customertype`)
 
 | Method   | Endpoint                  | Description                                | Required Headers           | Body Example |
 |----------|---------------------------|--------------------------------------------|----------------------------|-------------------------------------------------------------------------------------------------------|
@@ -148,9 +169,8 @@ API Endpoints
 | PUT    | `/delete/:id`             | Soft Delete (is_delete = 1)        | `Authorization: Bearer <Token>` | - |
 | DELETE | `/remove/:id`             | ลบข้อมูลจริง                      | `Authorization: Bearer <Token>` | - |
 
-### Base Path: `/api/v1/protected/publishers`
-
-### **Publisher API**
+### 🔖 Publisher API
+### Base Path: (`/api/v1/protected/publishers`)
 
 | Method   | Endpoint                  | Description                                | Required Headers           | Body Example                                                                                           |
 |----------|---------------------------|--------------------------------------------|----------------------------|-------------------------------------------------------------------------------------------------------|
@@ -162,9 +182,8 @@ API Endpoints
 | `PUT`    | `/publishers/delete/:id`  | Soft delete a Publisher (`is_delete = 1`) | `Authorization: Bearer <Token>` | N/A                                                                                                   |
 | `DELETE` | `/publishers/remove/:id`  | Hard delete a Publisher                   | `Authorization: Bearer <Token>` | N/A                                                                                                   |
 
-### Base Path: `/api/v1/protected/publishertype`
-
-### **Publisher Type API**
+### 📙 Publisher Type API
+### Base Path: (`/api/v1/protected/publishertype`)
 
 | Method   | Endpoint                      | Description                                | Required Headers           | Body Example                                                                                           |
 |----------|-------------------------------|--------------------------------------------|----------------------------|-------------------------------------------------------------------------------------------------------|
@@ -179,7 +198,7 @@ API Endpoints
 ---
 
 
-## Libraries and Frameworks
+## 💽 **Libraries and Frameworks**
 
 ### Backend Framework
 - [Fiber](https://gofiber.io/) - High-performance web framework for Go.
@@ -199,7 +218,7 @@ API Endpoints
 ### Logging
 - Built-in `log` package in Go for lightweight logging.
 
-## Installation and Setup
+## 💾 **Installation and Setup**
 
 ### Prerequisites
 - Go (1.19 or higher)
@@ -257,6 +276,6 @@ API Endpoints
    ```
 
 
-## License
+## ©️ **License**
 
-This project is licensed under the MIT License. See the LICENSE file for details.
+This project is licensed under the PENBUN License. See the LICENSE file for details.
