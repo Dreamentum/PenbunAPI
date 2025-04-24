@@ -1,5 +1,5 @@
 
-# 🅿️ PenbunAPI v1.5.3
+# 🅿️ **PenbunAPI v1.5.5** [BETA]
 
 PenbunAPI is a RESTful API designed to manage the distribution and supply of books and stationery. It provides robust features for inventory management, order processing, and user authentication using JWT.
 
@@ -57,26 +57,25 @@ PenbunAPI is a RESTful API designed to manage the distribution and supply of boo
 - **Publisher Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Publisher
 - **Customer Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Customer
 
-## 🆕 **What's New in v1.5.3**
+## 🆕 **What's New in v1.5.6**
 
-### **Book Type API**
-1. Added comprehensive management for `tb_customer` including:
-   - Insert Book Type 
-   - Select All Book Type 
-   - Select Book Type By ID
-   - Select Book Type with Paging
-   - Update Book Type By ID
-   - Soft Delete Book Type (is_delete)
-   - Hard Delete Book Type
+- ✅ Use only "discount_id" field
+- ✅ Add "discount_id" field to publisher
+- ✅ Remove all "default_discount_code" field in `tb_publisher`
+- All Publisher API endpoints now support insert/update/select of discount_id
+- Controller logic updated using COALESCE(NULLIF(...)) to avoid null overwrite
+- Documentation and routing updated accordingly
 
-2. Added Routing for Book Type:
-   - `/api/v1/protected/booktype/insert`
-   - `/api/v1/protected/booktype/select/all`
-   - `/api/v1/protected/booktype/select/page`
-   - `/api/v1/protected/booktype/select/:id`
-   - `/api/v1/protected/booktype/update/:id`
-   - `/api/v1/protected/booktype/delete/:id`
-   - `/api/v1/protected/booktype/remove/:id`
+
+| Method | Endpoint               | Description                         | Body Example |
+|--------|------------------------|-------------------------------------|--------------|
+| POST   | /insert                | เพิ่ม Publisher ใหม่                | `{ "publisher_name": "...", "discount_id": "DISC001" }` |
+| GET    | /select/all            | ดึง Publisher ทั้งหมด              | —            |
+| GET    | /select/page?page=1   | ดึง Publisher แบบ Paging            | —            |
+| GET    | /select/:id           | ดึง Publisher ตามรหัส              | —            |
+| PUT    | /update/:id           | อัปเดต Publisher ตามรหัส           | `{ "publisher_name": "...", "discount_id": "DISC002" }` |
+| PUT    | /delete/:id           | Soft Delete (`is_delete = 1`)       | —            |
+| DELETE | /remove/:id           | ลบออกจากฐานข้อมูลจริง              | —            |
 
 ---
 
@@ -197,7 +196,6 @@ API Endpoints
 
 ---
 
-
 ## 💽 **Libraries and Frameworks**
 
 ### Backend Framework
@@ -274,7 +272,6 @@ API Endpoints
    INSERT INTO tb_users (user_name, user_password)
    VALUES ('username', '$2y$10$KfQ8mU5VvJ5QGk7/LN9OeOujOPEwLjD3Oo4yEWDwEpr6/LkfuPWoK');
    ```
-
 
 ## ©️ **License**
 

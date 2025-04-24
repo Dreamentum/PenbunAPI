@@ -4,6 +4,7 @@ type Publisher struct {
 	PublisherCode   string  `json:"publisher_code"`
 	PublisherTypeID string  `json:"publisher_type_id"`
 	PublisherName   string  `json:"publisher_name"`
+	DiscountID      *string `json:"discount_id"` // ✅ ใหม่
 	ContactName1    *string `json:"contact_name1"`
 	ContactName2    *string `json:"contact_name2"`
 	Email           *string `json:"email"`
