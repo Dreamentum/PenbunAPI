@@ -135,7 +135,7 @@ PenbunAPI/
 API Endpoints
 -----------------------
 
-# PenbunAPI v1.5.3
+# PenbunAPI v1.5.6
 
 ### 📘 Book Type API 
 ### Base Path: (`/api/v1/protected/booktype`)
