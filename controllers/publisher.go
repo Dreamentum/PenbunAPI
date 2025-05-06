@@ -28,7 +28,7 @@ func executeTransaction(db *sql.DB, queries []func(tx *sql.Tx) error) error {
 	return tx.Commit()
 }
 
-func SelectAllPublishers(c *fiber.Ctx) error {
+func SelectAllPublisher(c *fiber.Ctx) error {
 	query := `
 		SELECT publisher_code, publisher_type_id, publisher_name, contact_name1, contact_name2,
 		       email, phone1, phone2, address, district, province, zip_code,
@@ -59,7 +59,7 @@ func SelectAllPublishers(c *fiber.Ctx) error {
 	return c.JSON(publishers)
 }
 
-func SelectPagePublishers(c *fiber.Ctx) error {
+func SelectPagePublisher(c *fiber.Ctx) error {
 	page := c.QueryInt("page", 1)
 	limit := c.QueryInt("limit", 10)
 	offset := (page - 1) * limit

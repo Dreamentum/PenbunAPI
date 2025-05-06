@@ -57,15 +57,14 @@ PenbunAPI is a RESTful API designed to manage the distribution and supply of boo
 - **Publisher Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Publisher
 - **Customer Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Customer
 
-## 🆕 **What's New in v1.5.6**
+## 📦 **New in v1.5.6**
 
-- ✅ Use only "discount_id" field
-- ✅ Add "discount_id" field to publisher
-- ✅ Remove all "default_discount_code" field in `tb_publisher`
-- All Publisher API endpoints now support insert/update/select of discount_id
-- Controller logic updated using COALESCE(NULLIF(...)) to avoid null overwrite
-- Documentation and routing updated accordingly
-
+- ✅ เพิ่ม Discount Type API พร้อม 7 ฟังก์ชัน (Select All, Page, By ID, Insert, Update, Soft Delete, Hard Delete)
+- ✅ ใช้ `discount_id` แทน `default_discount_code` ใน Publisher
+- ✅ อัปเดตโค้ดทุกจุดให้รองรับ `discount_id`
+- ✅ แก้โค้ด Update โดยใช้ `COALESCE(NULLIF(...))`
+- ✅ เพิ่ม routing `/discounttype/*` ใน `routes/v1.go`
+- ✅ อัปเดต Model `DiscountType` ให้สอดคล้องกับ schema PenbunSQL v1.7.1
 
 | Method | Endpoint               | Description                         | Body Example |
 |--------|------------------------|-------------------------------------|--------------|
@@ -89,6 +88,7 @@ PenbunAPI/
 │   ├── blacklist.go      # Token blacklist
 │   ├── env.go            # Environment variable management
 │   └── logger.go         # Log configuration
+│
 ├── controllers/
 │   ├── auth.go           # Authentication endpoints
 │   ├── books.go          # Book management endpoints
@@ -97,8 +97,10 @@ PenbunAPI/
 │   ├── references.go     # Reference management endpoints
 │   ├── customer.go       # Customer management endpoints
 │   ├── customerType.go   # Customer Type management endpoints
-│   ├── book.go           # ✅ Book management endpoints
-│   └── bookType.go       # ✅ Book Type management endpoints
+│   ├── book.go           # Book management endpoints
+│   ├── bookType.go       # Book Type management endpoints
+│   └── discountType.go   # ✅ Discount Type management endpoints
+│
 ├── models/
 │   ├── user.go           # User-related structs and logic
 │   ├── book.go           # Book-related structs and logic
@@ -106,17 +108,23 @@ PenbunAPI/
 │   ├── publisher.go      # Publisher-related structs and logic
 │   ├── publisherType.go  # Publisher Type-related structs and logic
 │   ├── references.go     # Reference-related structs and logic
-│   ├── book.go           # ✅ Book management structs and logic
-│   └── bookType.go       # ✅ Book Type management structs and logic
+│   ├── book.go           # Book management structs and logic
+│   ├── bookType.go       # Book Type management structs and logic
+│   └── discountType.go   # ✅ Discount Type management structs and logic
+│
 ├── routes/
 │   ├── public.go         # Public API version routes
 │   ├── v1.go             # API version 1 routes and grouping
 │   └── v2.go             # API version 2 routes (placeholder)
+│
 ├── middleware/
 │   └── jwt.go            # JWT middleware for secure endpoints
+│
 ├── logs/
 │   └── transaction.log   # Log file for transactions
+│
 ├── .env                  # Environment variables
+│
 └── go.mod                # Go module file
 ```
 
@@ -194,6 +202,18 @@ API Endpoints
 | `PUT`    | `/publishertype/delete/:id`   | Soft delete a Publisher Type (`is_delete = 1`) | `Authorization: Bearer <Token>` | N/A                                                                                                   |
 | `DELETE` | `/publishertype/remove/:id`   | Hard delete a Publisher Type              | `Authorization: Bearer <Token>` | N/A                                                                                                   |
 
+### 💸 Discount Type API  
+### Base Path: (`/api/v1/protected/discounttype`)
+
+| Method   | Endpoint                          | Description                                   | Required Headers                | Body Example |
+|----------|-----------------------------------|-----------------------------------------------|----------------------------------|--------------|
+| `POST`   | `/discounttype/insert`            | Insert a new Discount Type                   | `Authorization: Bearer <Token>` | `{ "type_name": "Summer Sale", "discount_unit_type": "percent", "update_by": "admin" }` |
+| `GET`    | `/discounttype/select/all`        | Select all Discount Types                    | `Authorization: Bearer <Token>` | — |
+| `GET`    | `/discounttype/select/page`       | Select Discount Types with Paging            | `Authorization: Bearer <Token>` | Query: `page=1&limit=20` |
+| `GET`    | `/discounttype/select/:id`        | Select a Discount Type by ID                 | `Authorization: Bearer <Token>` | — |
+| `PUT`    | `/discounttype/update/:id`        | Update a Discount Type by ID                 | `Authorization: Bearer <Token>` | `{ "type_name": "Holiday Promo", "discount_unit_type": "fixed", "update_by": "admin" }` |
+| `PUT`    | `/discounttype/delete/:id`        | Soft delete a Discount Type (`is_delete = 1`) | `Authorization: Bearer <Token>` | — |
+| `DELETE` | `/discounttype/remove/:id`        | Hard delete a Discount Type                  | `Authorization: Bearer <Token>` | — |
 ---
 
 ## 💽 **Libraries and Frameworks**

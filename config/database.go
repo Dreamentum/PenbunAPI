@@ -11,7 +11,7 @@ import (
 var DB *sql.DB
 
 func ConnectDatabase() {
-	connString := fmt.Sprintf("server=%s;port=%s;user id=%s;password=%s;database=%s;",
+	connString := fmt.Sprintf("server=%s;port=%s;user id=%s;password=%s;database=%s;encrypt=disable",
 		GetEnv("DB_HOST"), GetEnv("DB_PORT"), GetEnv("DB_USER"), GetEnv("DB_PASSWORD"), GetEnv("DB_NAME"))
 
 	var err error
