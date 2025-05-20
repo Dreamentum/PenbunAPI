@@ -1,5 +1,5 @@
 
-# 🅿️ **PenbunAPI v1.5.6** [BETA]
+# 🅿️ **PenbunAPI v1.6.1** [BETA]
 
 PenbunAPI is a RESTful API designed to manage the distribution and supply of books and stationery. It provides robust features for inventory management, order processing, and user authentication using JWT.
 
@@ -17,7 +17,6 @@ PenbunAPI is a RESTful API designed to manage the distribution and supply of boo
 - **Versioned**: API (v1, v2)
 - **Graceful Shutdown**
 
-
 ## ⚙️ **Fundamental Functions**
 
 > ฟังก์ชันพื้นฐานที่ PenbunAPI ทุก Master Data จะต้องมี ครบ 7 Function โดยโครงสร้างจะทำงานและมีลักษณะเหมือนกันทั้งหมด เพื่อให้การพัฒนาง่ายต่อการดูแลและขยายในอนาคต
@@ -27,10 +26,11 @@ PenbunAPI is a RESTful API designed to manage the distribution and supply of boo
 | 1  | Select All       | ดึงข้อมูลทั้งหมด โดย where `is_delete = 0`                  |
 | 2  | Select By Paging | รองรับ Query Parameter `?page=<number>&limit=<number>` เพื่อแบ่งหน้า |
 | 3  | Select By ID     | ดึงข้อมูลตาม Primary Key เช่น `customer_code` หรือ `publisher_code` หรือ `type_id` |
-| 4  | Insert           | เพิ่มข้อมูลใหม่ โดย Insert เฉพาะ field ที่จำเป็น         |
-| 5  | Update By ID     | แก้ไขข้อมูลตาม ID โดยไม่แก้ไขค่า Auto Generate เช่น Code ต่าง ๆ |
-| 6  | Delete By ID     | Soft Delete โดย Update `is_delete = 1` เท่านั้น             |
-| 7  | Remove By ID     | Hard Delete การลบข้อมูลออกจาก Database จริง ๆ              |
+| 4  | Select By NAME   | ดึงข้อมูลตาม โดยใช้ชื่อ เช่น Select By Name (LIKE `%name%`) |
+| 5  | Insert           | เพิ่มข้อมูลใหม่ โดย Insert เฉพาะ field ที่จำเป็น         |
+| 6  | Update By ID     | แก้ไขข้อมูลตาม ID โดยไม่แก้ไขค่า Auto Generate เช่น Code ต่าง ๆ |
+| 7  | Delete By ID     | Soft Delete โดย Update `is_delete = 1` เท่านั้น             |
+| 8  | Remove By ID     | Hard Delete การลบข้อมูลออกจาก Database จริง ๆ              |
 
 ---
 
@@ -46,6 +46,7 @@ PenbunAPI is a RESTful API designed to manage the distribution and supply of boo
 /api/v1/protected/publishers/select/page
 /api/v1/protected/customertype/select/page
 ```
+- ฟังก์ชัน Select By NAME ยังไม่มีการ Implement
 
 ## ↩️ **Previous Version**
 - **Authentication**: Secure login with JWT-based authentication.
@@ -56,15 +57,18 @@ PenbunAPI is a RESTful API designed to manage the distribution and supply of boo
 - **Graceful Shutdown**: Handles safe server shutdown for cleanup and database disconnections.
 - **Publisher Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Publisher
 - **Customer Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Customer
+- **Discount Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Discount
 
-## 📦 **New in v1.5.6**
+## 📦 **New in v1.6.1**
 
-- ✅ เพิ่ม Discount Type API พร้อม 7 ฟังก์ชัน (Select All, Page, By ID, Insert, Update, Soft Delete, Hard Delete)
-- ✅ ใช้ `discount_id` แทน `default_discount_code` ใน Publisher
-- ✅ อัปเดตโค้ดทุกจุดให้รองรับ `discount_id`
-- ✅ แก้โค้ด Update โดยใช้ `COALESCE(NULLIF(...))`
-- ✅ เพิ่ม routing `/discounttype/*` ใน `routes/v1.go`
-- ✅ อัปเดต Model `DiscountType` ให้สอดคล้องกับ schema PenbunSQL v1.7.1
+- ✅ เพิ่ม Discount Type API พร้อม 8 ฟังก์ชัน (Select All, Page, By ID, By NAME, Insert, Update, Soft Delete, Hard Delete)
+- ✅ ใช้ `models.ApiResponse` เป็นมาตรฐานการตอบกลับ  
+- ✅ ทุกคำสั่งใช้ `Transaction` ป้องกันข้อมูลเสียหาย
+- ✅ เพิ่ม **Select By Name** ให้ครบทั้ง 8 ฟังก์ชันสำหรับทุกโมดูล
+- ✅ ใช้ `executeTransaction` จาก `utils/transaction.go`
+- ✅ ปรับรูปแบบ Response ให้เป็น `models.ApiResponse` แบบมี key ทุกจุด
+- ✅ เพิ่ม Book API (`tb_book`) พร้อม 8 ฟังก์ชัน
+- ✅ รองรับ LIKE Search ใน `Publisher`, `Book`, `Customer`, `Type` ทุกประเภท
 
 | Method | Endpoint               | Description                         | Body Example |
 |--------|------------------------|-------------------------------------|--------------|
@@ -135,7 +139,21 @@ PenbunAPI/
 API Endpoints
 -----------------------
 
-# PenbunAPI v1.5.6
+# PenbunAPI v1.6.1
+
+### 📗 Book API 
+### Base Path: (`/api/v1/protected/book`)
+
+| Method   | Endpoint                      | Description                                  | Required Headers                 | Body Example |
+|----------|-------------------------------|----------------------------------------------|----------------------------------|--------------|
+| `POST`   | `/insert`                     | เพิ่มข้อมูลหนังสือใหม่                      | `Authorization: Bearer <token>` | `{ "book_name": "คณิตศาสตร์ ม.3", "book_type_id": "BKTYP001", "publisher_code": "PUB001", "book_price": 120.0, "book_discount": 20.0, "update_by": "admin" }` |
+| `GET`    | `/select/all`                 | ดึงข้อมูลหนังสือทั้งหมด                    | `Authorization: Bearer <token>` | — |
+| `GET`    | `/select/page?page=1&limit=10`| ดึงข้อมูลหนังสือแบบ Paging                  | `Authorization: Bearer <token>` | — |
+| `GET`    | `/select/:id`                 | ดึงข้อมูลหนังสือตาม book_code              | `Authorization: Bearer <token>` | — |
+| `GET`    | `/select/:name`               | ดึงข้อมูลหนังสือตามชื่อ (Like Search)      | `Authorization: Bearer <token>` | — |
+| `PUT`    | `/update/:id`                 | อัปเดตข้อมูลหนังสือตามรหัส                | `Authorization: Bearer <token>` | `{ "book_name": "ฟิสิกส์ ม.3", "book_price": 140.0, "book_discount": 15.0, "update_by": "editor" }` |
+| `PUT`    | `/delete/:id`                 | ลบข้อมูลแบบ Soft Delete (`is_delete = 1`)  | `Authorization: Bearer <token>` | — |
+| `DELETE` | `/remove/:id`                 | ลบข้อมูลออกจากฐานข้อมูล (Hard Delete)     | `Authorization: Bearer <token>` | — |
 
 ### 📘 Book Type API 
 ### Base Path: (`/api/v1/protected/booktype`)

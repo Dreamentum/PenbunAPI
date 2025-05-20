@@ -3,30 +3,12 @@ package controllers
 import (
 	"PenbunAPI/config"
 	"PenbunAPI/models"
+	"PenbunAPI/utils"
 	"database/sql"
+	"log"
 
 	"github.com/gofiber/fiber/v2"
 )
-
-func executeTransaction(db *sql.DB, queries []func(tx *sql.Tx) error) error {
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if p := recover(); p != nil {
-			tx.Rollback()
-			panic(p)
-		}
-	}()
-	for _, query := range queries {
-		if err := query(tx); err != nil {
-			tx.Rollback()
-			return err
-		}
-	}
-	return tx.Commit()
-}
 
 func SelectAllPublisher(c *fiber.Ctx) error {
 	query := `
@@ -38,25 +20,40 @@ func SelectAllPublisher(c *fiber.Ctx) error {
 	`
 	rows, err := config.DB.Query(query)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch publishers"})
+		log.Println(err)
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to fetch publishers",
+			Data:    nil,
+		})
 	}
 	defer rows.Close()
 
 	var publishers []models.Publisher
 	for rows.Next() {
-		var publisher models.Publisher
+		var p models.Publisher
 		if err := rows.Scan(
-			&publisher.PublisherCode, &publisher.PublisherTypeID, &publisher.PublisherName,
-			&publisher.ContactName1, &publisher.ContactName2,
-			&publisher.Email, &publisher.Phone1, &publisher.Phone2,
-			&publisher.Address, &publisher.District, &publisher.Province, &publisher.ZipCode,
-			&publisher.Note, &publisher.DiscountID, &publisher.UpdateBy, &publisher.UpdateDate, &publisher.IDStatus,
+			&p.PublisherCode, &p.PublisherTypeID, &p.PublisherName,
+			&p.ContactName1, &p.ContactName2,
+			&p.Email, &p.Phone1, &p.Phone2,
+			&p.Address, &p.District, &p.Province, &p.ZipCode,
+			&p.Note, &p.DiscountID, &p.UpdateBy, &p.UpdateDate, &p.IDStatus,
 		); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to read data"})
+			log.Println(err)
+			return c.Status(500).JSON(models.ApiResponse{
+				Status:  "error",
+				Message: "Failed to read data",
+				Data:    nil,
+			})
 		}
-		publishers = append(publishers, publisher)
+		publishers = append(publishers, p)
 	}
-	return c.JSON(publishers)
+
+	return c.JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "",
+		Data:    publishers,
+	})
 }
 
 func SelectPagePublisher(c *fiber.Ctx) error {
@@ -75,175 +72,318 @@ func SelectPagePublisher(c *fiber.Ctx) error {
 	`
 	rows, err := config.DB.Query(query, sql.Named("Offset", offset), sql.Named("Limit", limit))
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch publishers"})
+		log.Println(err)
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to fetch publishers",
+			Data:    nil,
+		})
 	}
 	defer rows.Close()
 
 	var publishers []models.Publisher
 	for rows.Next() {
-		var publisher models.Publisher
+		var p models.Publisher
 		if err := rows.Scan(
-			&publisher.PublisherCode, &publisher.PublisherTypeID, &publisher.PublisherName,
-			&publisher.ContactName1, &publisher.ContactName2,
-			&publisher.Email, &publisher.Phone1, &publisher.Phone2,
-			&publisher.Address, &publisher.District, &publisher.Province, &publisher.ZipCode,
-			&publisher.Note, &publisher.DiscountID, &publisher.UpdateBy, &publisher.UpdateDate, &publisher.IDStatus,
+			&p.PublisherCode, &p.PublisherTypeID, &p.PublisherName,
+			&p.ContactName1, &p.ContactName2,
+			&p.Email, &p.Phone1, &p.Phone2,
+			&p.Address, &p.District, &p.Province, &p.ZipCode,
+			&p.Note, &p.DiscountID, &p.UpdateBy, &p.UpdateDate, &p.IDStatus,
 		); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to read data"})
+			log.Println(err)
+			return c.Status(500).JSON(models.ApiResponse{
+				Status:  "error",
+				Message: "Failed to read data",
+				Data:    nil,
+			})
 		}
-		publishers = append(publishers, publisher)
+		publishers = append(publishers, p)
 	}
 
 	var total int
 	err = config.DB.QueryRow(`SELECT COUNT(*) FROM tb_publisher WHERE is_delete = 0`).Scan(&total)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to count records"})
+		log.Println(err)
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to count records",
+			Data:    nil,
+		})
 	}
 
-	return c.JSON(fiber.Map{
-		"page":       page,
-		"limit":      limit,
-		"total":      total,
-		"publishers": publishers,
+	return c.JSON(models.ApiResponse{
+		Status: "success",
+		Data: fiber.Map{
+			"page":      page,
+			"limit":     limit,
+			"total":     total,
+			"publisher": publishers,
+		},
 	})
 }
 
 func SelectPublisherByID(c *fiber.Ctx) error {
-	publisherID := c.Params("id")
+	id := c.Params("id")
 	query := `
 		SELECT publisher_code, publisher_type_id, publisher_name, discount_id, contact_name1, contact_name2,
 		       email, phone1, phone2, address, district, province, zip_code,
 			   note, update_by, update_date, id_status
 		FROM tb_publisher
-		WHERE publisher_code = @PublisherID AND is_delete = 0
+		WHERE publisher_code = @ID AND is_delete = 0
 	`
-	row := config.DB.QueryRow(query, sql.Named("PublisherID", publisherID))
-	var publisher models.Publisher
+	row := config.DB.QueryRow(query, sql.Named("ID", id))
+
+	var p models.Publisher
 	if err := row.Scan(
-		&publisher.PublisherCode, &publisher.PublisherTypeID, &publisher.PublisherName, &publisher.DiscountID,
-		&publisher.ContactName1, &publisher.ContactName2,
-		&publisher.Email, &publisher.Phone1, &publisher.Phone2,
-		&publisher.Address, &publisher.District, &publisher.Province, &publisher.ZipCode,
-		&publisher.Note, &publisher.UpdateBy, &publisher.UpdateDate, &publisher.IDStatus,
+		&p.PublisherCode, &p.PublisherTypeID, &p.PublisherName, &p.DiscountID,
+		&p.ContactName1, &p.ContactName2,
+		&p.Email, &p.Phone1, &p.Phone2,
+		&p.Address, &p.District, &p.Province, &p.ZipCode,
+		&p.Note, &p.UpdateBy, &p.UpdateDate, &p.IDStatus,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Publisher not found"})
+			return c.Status(404).JSON(models.ApiResponse{
+				Status:  "error",
+				Message: "Publisher not found",
+				Data:    nil,
+			})
 		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to read data"})
+		log.Println(err)
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to read data",
+			Data:    nil,
+		})
 	}
-	return c.JSON(publisher)
+
+	return c.JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "",
+		Data:    p,
+	})
+}
+
+func SelectPublisherByName(c *fiber.Ctx) error {
+	name := c.Params("name")
+	query := `
+		SELECT publisher_code, publisher_type_id, publisher_name, contact_name1, contact_name2,
+		       email, phone1, phone2, address, district, province, zip_code,
+			   note, discount_id, update_by, update_date, id_status
+		FROM tb_publisher
+		WHERE publisher_name LIKE '%' + @Name + '%' AND is_delete = 0
+	`
+	rows, err := config.DB.Query(query, sql.Named("Name", name))
+	if err != nil {
+		log.Println(err)
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to fetch publishers",
+			Data:    nil,
+		})
+	}
+	defer rows.Close()
+
+	var publishers []models.Publisher
+	for rows.Next() {
+		var p models.Publisher
+		if err := rows.Scan(
+			&p.PublisherCode, &p.PublisherTypeID, &p.PublisherName,
+			&p.ContactName1, &p.ContactName2,
+			&p.Email, &p.Phone1, &p.Phone2,
+			&p.Address, &p.District, &p.Province, &p.ZipCode,
+			&p.Note, &p.DiscountID, &p.UpdateBy, &p.UpdateDate, &p.IDStatus,
+		); err != nil {
+			log.Println(err)
+			return c.Status(500).JSON(models.ApiResponse{
+				Status:  "error",
+				Message: "Failed to read data",
+				Data:    nil,
+			})
+		}
+		publishers = append(publishers, p)
+	}
+
+	if len(publishers) == 0 {
+		return c.Status(404).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "No matching publisher found",
+			Data:    nil,
+		})
+	}
+
+	return c.JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "",
+		Data:    publishers,
+	})
 }
 
 func InsertPublisher(c *fiber.Ctx) error {
-	var publisher models.Publisher
-	if err := c.BodyParser(&publisher); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
+	var p models.Publisher
+	if err := c.BodyParser(&p); err != nil {
+		return c.Status(400).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Invalid request",
+			Data:    nil,
+		})
 	}
 	query := `
 		INSERT INTO tb_publisher (publisher_type_id, publisher_name, discount_id, contact_name1, contact_name2,
 			email, phone1, phone2, address, district, province, zip_code, note, update_by)
-		VALUES (@PublisherTypeID, @PublisherName, @DiscountID, @ContactName1, @ContactName2,
-			@Email, @Phone1, @Phone2, @Address, @District, @Province, @ZipCode, @Note, @UpdateBy)
+		VALUES (@TypeID, @Name, @DiscountID, @Contact1, @Contact2,
+			@Email, @Phone1, @Phone2, @Address, @District, @Province, @Zip, @Note, @UpdateBy)
 	`
-	err := executeTransaction(config.DB, []func(tx *sql.Tx) error{
+	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
 			_, err := tx.Exec(query,
-				sql.Named("PublisherTypeID", publisher.PublisherTypeID),
-				sql.Named("PublisherName", publisher.PublisherName),
-				sql.Named("DiscountID", publisher.DiscountID),
-				sql.Named("ContactName1", publisher.ContactName1),
-				sql.Named("ContactName2", publisher.ContactName2),
-				sql.Named("Email", publisher.Email),
-				sql.Named("Phone1", publisher.Phone1),
-				sql.Named("Phone2", publisher.Phone2),
-				sql.Named("Address", publisher.Address),
-				sql.Named("District", publisher.District),
-				sql.Named("Province", publisher.Province),
-				sql.Named("ZipCode", publisher.ZipCode),
-				sql.Named("Note", publisher.Note),
-				sql.Named("UpdateBy", publisher.UpdateBy),
+				sql.Named("TypeID", p.PublisherTypeID),
+				sql.Named("Name", p.PublisherName),
+				sql.Named("DiscountID", p.DiscountID),
+				sql.Named("Contact1", p.ContactName1),
+				sql.Named("Contact2", p.ContactName2),
+				sql.Named("Email", p.Email),
+				sql.Named("Phone1", p.Phone1),
+				sql.Named("Phone2", p.Phone2),
+				sql.Named("Address", p.Address),
+				sql.Named("District", p.District),
+				sql.Named("Province", p.Province),
+				sql.Named("Zip", p.ZipCode),
+				sql.Named("Note", p.Note),
+				sql.Named("UpdateBy", p.UpdateBy),
 			)
 			return err
 		},
 	})
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to insert publisher"})
+		log.Println(err)
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to insert publisher",
+			Data:    nil,
+		})
 	}
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"message": "Publisher added successfully"})
+	return c.Status(201).JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "Publisher added successfully",
+		Data:    nil,
+	})
 }
 
 func UpdatePublisherByID(c *fiber.Ctx) error {
-	publisherID := c.Params("id")
-	var updated models.Publisher
-	if err := c.BodyParser(&updated); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	id := c.Params("id")
+	var p models.Publisher
+	if err := c.BodyParser(&p); err != nil {
+		return c.Status(400).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Invalid request body",
+			Data:    nil,
+		})
 	}
 	query := `
 		UPDATE tb_publisher
-		SET publisher_type_id = @PublisherTypeID,
-			publisher_name = COALESCE(NULLIF(@PublisherName, ''), publisher_name),
+		SET publisher_type_id = @TypeID,
+			publisher_name = COALESCE(NULLIF(@Name, ''), publisher_name),
 			discount_id = COALESCE(NULLIF(@DiscountID, ''), discount_id),
-			contact_name1 = @ContactName1,
-			contact_name2 = @ContactName2,
+			contact_name1 = @Contact1,
+			contact_name2 = @Contact2,
 			email = @Email,
 			phone1 = @Phone1,
 			phone2 = @Phone2,
 			address = @Address,
 			district = @District,
 			province = @Province,
-			zip_code = COALESCE(NULLIF(@ZipCode, ''), zip_code),
+			zip_code = COALESCE(NULLIF(@Zip, ''), zip_code),
 			note = @Note,
 			update_by = @UpdateBy
-		WHERE publisher_code = @PublisherID AND is_delete = 0
+		WHERE publisher_code = @ID AND is_delete = 0
 	`
-	err := executeTransaction(config.DB, []func(tx *sql.Tx) error{
+	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
 			_, err := tx.Exec(query,
-				sql.Named("PublisherTypeID", updated.PublisherTypeID),
-				sql.Named("PublisherName", updated.PublisherName),
-				sql.Named("DiscountID", updated.DiscountID),
-				sql.Named("ContactName1", updated.ContactName1),
-				sql.Named("ContactName2", updated.ContactName2),
-				sql.Named("Email", updated.Email),
-				sql.Named("Phone1", updated.Phone1),
-				sql.Named("Phone2", updated.Phone2),
-				sql.Named("Address", updated.Address),
-				sql.Named("District", updated.District),
-				sql.Named("Province", updated.Province),
-				sql.Named("ZipCode", updated.ZipCode),
-				sql.Named("Note", updated.Note),
-				sql.Named("UpdateBy", updated.UpdateBy),
-				sql.Named("PublisherID", publisherID),
+				sql.Named("TypeID", p.PublisherTypeID),
+				sql.Named("Name", p.PublisherName),
+				sql.Named("DiscountID", p.DiscountID),
+				sql.Named("Contact1", p.ContactName1),
+				sql.Named("Contact2", p.ContactName2),
+				sql.Named("Email", p.Email),
+				sql.Named("Phone1", p.Phone1),
+				sql.Named("Phone2", p.Phone2),
+				sql.Named("Address", p.Address),
+				sql.Named("District", p.District),
+				sql.Named("Province", p.Province),
+				sql.Named("Zip", p.ZipCode),
+				sql.Named("Note", p.Note),
+				sql.Named("UpdateBy", p.UpdateBy),
+				sql.Named("ID", id),
 			)
 			return err
 		},
 	})
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update publisher"})
+		log.Println(err)
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to update publisher",
+			Data:    nil,
+		})
 	}
-	return c.JSON(fiber.Map{"message": "Publisher updated successfully"})
+	return c.JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "Publisher updated successfully",
+		Data:    nil,
+	})
 }
 
 func DeletePublisherByID(c *fiber.Ctx) error {
-	publisherID := c.Params("id")
+	id := c.Params("id")
 	query := `
 		UPDATE tb_publisher
-		SET is_delete = 1, update_date = GETDATE()
-		WHERE publisher_code = @PublisherID
+		SET is_delete = 1,
+			update_date = CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'SE Asia Standard Time' AS DATETIME)
+		WHERE publisher_code = @ID
 	`
-	_, err := config.DB.Exec(query, sql.Named("PublisherID", publisherID))
+	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
+		func(tx *sql.Tx) error {
+			_, err := tx.Exec(query, sql.Named("ID", id))
+			return err
+		},
+	})
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to delete publisher"})
+		log.Println(err)
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to soft delete publisher",
+			Data:    nil,
+		})
 	}
-	return c.JSON(fiber.Map{"message": "Publisher marked as deleted"})
+	return c.JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "Publisher marked as deleted",
+		Data:    nil,
+	})
 }
 
 func RemovePublisherByID(c *fiber.Ctx) error {
-	publisherID := c.Params("id")
-	query := `DELETE FROM tb_publisher WHERE publisher_code = @PublisherID`
-	_, err := config.DB.Exec(query, sql.Named("PublisherID", publisherID))
+	id := c.Params("id")
+	query := `DELETE FROM tb_publisher WHERE publisher_code = @ID`
+	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
+		func(tx *sql.Tx) error {
+			_, err := tx.Exec(query, sql.Named("ID", id))
+			return err
+		},
+	})
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to remove publisher"})
+		log.Println(err)
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to hard delete publisher",
+			Data:    nil,
+		})
 	}
-	return c.JSON(fiber.Map{"message": "Publisher removed successfully"})
+	return c.JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "Publisher removed successfully",
+		Data:    nil,
+	})
 }

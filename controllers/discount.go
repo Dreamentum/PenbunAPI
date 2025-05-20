@@ -10,10 +10,11 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func SelectAllPublisherTypes(c *fiber.Ctx) error {
+func SelectAllDiscount(c *fiber.Ctx) error {
 	query := `
-		SELECT publisher_type_id, type_name, description, update_by, update_date, id_status
-		FROM tb_publisher_type
+		SELECT discount_id, discount_name, discount_type, discount_value,
+		       start_date, end_date, note, update_by, update_date, id_status
+		FROM tb_discount
 		WHERE is_delete = 0
 	`
 	rows, err := config.DB.Query(query)
@@ -21,16 +22,19 @@ func SelectAllPublisherTypes(c *fiber.Ctx) error {
 		log.Println(err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
-			Message: "Failed to fetch publisher types",
+			Message: "Failed to fetch discounts",
 			Data:    nil,
 		})
 	}
 	defer rows.Close()
 
-	var result []models.PublisherType
+	var list []models.Discount
 	for rows.Next() {
-		var pt models.PublisherType
-		if err := rows.Scan(&pt.PublisherTypeID, &pt.TypeName, &pt.Description, &pt.UpdateBy, &pt.UpdateDate, &pt.IDStatus); err != nil {
+		var d models.Discount
+		if err := rows.Scan(
+			&d.DiscountID, &d.DiscountName, &d.DiscountType, &d.DiscountValue,
+			&d.StartDate, &d.EndDate, &d.Note, &d.UpdateBy, &d.UpdateDate, &d.IDStatus,
+		); err != nil {
 			log.Println(err)
 			return c.Status(500).JSON(models.ApiResponse{
 				Status:  "error",
@@ -38,24 +42,25 @@ func SelectAllPublisherTypes(c *fiber.Ctx) error {
 				Data:    nil,
 			})
 		}
-		result = append(result, pt)
+		list = append(list, d)
 	}
 
 	return c.JSON(models.ApiResponse{
 		Status:  "success",
 		Message: "",
-		Data:    result,
+		Data:    list,
 	})
 }
 
-func SelectPagePublisherTypes(c *fiber.Ctx) error {
+func SelectPageDiscount(c *fiber.Ctx) error {
 	page := c.QueryInt("page", 1)
 	limit := c.QueryInt("limit", 10)
 	offset := (page - 1) * limit
 
 	query := `
-		SELECT publisher_type_id, type_name, description, update_by, update_date, id_status
-		FROM tb_publisher_type
+		SELECT discount_id, discount_name, discount_type, discount_value,
+		       start_date, end_date, note, update_by, update_date, id_status
+		FROM tb_discount
 		WHERE is_delete = 0
 		ORDER BY update_date DESC
 		OFFSET @Offset ROWS FETCH NEXT @Limit ROWS ONLY
@@ -65,16 +70,19 @@ func SelectPagePublisherTypes(c *fiber.Ctx) error {
 		log.Println(err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
-			Message: "Failed to fetch publisher types",
+			Message: "Failed to fetch discounts",
 			Data:    nil,
 		})
 	}
 	defer rows.Close()
 
-	var result []models.PublisherType
+	var list []models.Discount
 	for rows.Next() {
-		var pt models.PublisherType
-		if err := rows.Scan(&pt.PublisherTypeID, &pt.TypeName, &pt.Description, &pt.UpdateBy, &pt.UpdateDate, &pt.IDStatus); err != nil {
+		var d models.Discount
+		if err := rows.Scan(
+			&d.DiscountID, &d.DiscountName, &d.DiscountType, &d.DiscountValue,
+			&d.StartDate, &d.EndDate, &d.Note, &d.UpdateBy, &d.UpdateDate, &d.IDStatus,
+		); err != nil {
 			log.Println(err)
 			return c.Status(500).JSON(models.ApiResponse{
 				Status:  "error",
@@ -82,11 +90,11 @@ func SelectPagePublisherTypes(c *fiber.Ctx) error {
 				Data:    nil,
 			})
 		}
-		result = append(result, pt)
+		list = append(list, d)
 	}
 
 	var total int
-	err = config.DB.QueryRow(`SELECT COUNT(*) FROM tb_publisher_type WHERE is_delete = 0`).Scan(&total)
+	err = config.DB.QueryRow(`SELECT COUNT(*) FROM tb_discount WHERE is_delete = 0`).Scan(&total)
 	if err != nil {
 		log.Println(err)
 		return c.Status(500).JSON(models.ApiResponse{
@@ -99,29 +107,33 @@ func SelectPagePublisherTypes(c *fiber.Ctx) error {
 	return c.JSON(models.ApiResponse{
 		Status: "success",
 		Data: fiber.Map{
-			"page":          page,
-			"limit":         limit,
-			"total":         total,
-			"publisherType": result,
+			"page":     page,
+			"limit":    limit,
+			"total":    total,
+			"discount": list,
 		},
 	})
 }
 
-func SelectPublisherTypeByID(c *fiber.Ctx) error {
+func SelectDiscountByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 	query := `
-		SELECT publisher_type_id, type_name, description, update_by, update_date, id_status
-		FROM tb_publisher_type
-		WHERE publisher_type_id = @ID AND is_delete = 0
+		SELECT discount_id, discount_name, discount_type, discount_value,
+		       start_date, end_date, note, update_by, update_date, id_status
+		FROM tb_discount
+		WHERE discount_id = @ID AND is_delete = 0
 	`
 	row := config.DB.QueryRow(query, sql.Named("ID", id))
 
-	var pt models.PublisherType
-	if err := row.Scan(&pt.PublisherTypeID, &pt.TypeName, &pt.Description, &pt.UpdateBy, &pt.UpdateDate, &pt.IDStatus); err != nil {
+	var d models.Discount
+	if err := row.Scan(
+		&d.DiscountID, &d.DiscountName, &d.DiscountType, &d.DiscountValue,
+		&d.StartDate, &d.EndDate, &d.Note, &d.UpdateBy, &d.UpdateDate, &d.IDStatus,
+	); err != nil {
 		if err == sql.ErrNoRows {
 			return c.Status(404).JSON(models.ApiResponse{
 				Status:  "error",
-				Message: "Publisher type not found",
+				Message: "Discount not found",
 				Data:    nil,
 			})
 		}
@@ -136,32 +148,36 @@ func SelectPublisherTypeByID(c *fiber.Ctx) error {
 	return c.JSON(models.ApiResponse{
 		Status:  "success",
 		Message: "",
-		Data:    pt,
+		Data:    d,
 	})
 }
 
-func SelectPublisherTypeByName(c *fiber.Ctx) error {
+func SelectDiscountByName(c *fiber.Ctx) error {
 	name := c.Params("name")
 	query := `
-		SELECT publisher_type_id, type_name, description, update_by, update_date, id_status
-		FROM tb_publisher_type
-		WHERE type_name LIKE '%' + @Name + '%' AND is_delete = 0
+		SELECT discount_id, discount_name, discount_type, discount_value,
+		       start_date, end_date, note, update_by, update_date, id_status
+		FROM tb_discount
+		WHERE discount_name LIKE '%' + @Name + '%' AND is_delete = 0
 	`
 	rows, err := config.DB.Query(query, sql.Named("Name", name))
 	if err != nil {
 		log.Println(err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
-			Message: "Failed to fetch publisher types",
+			Message: "Failed to fetch discounts",
 			Data:    nil,
 		})
 	}
 	defer rows.Close()
 
-	var result []models.PublisherType
+	var list []models.Discount
 	for rows.Next() {
-		var pt models.PublisherType
-		if err := rows.Scan(&pt.PublisherTypeID, &pt.TypeName, &pt.Description, &pt.UpdateBy, &pt.UpdateDate, &pt.IDStatus); err != nil {
+		var d models.Discount
+		if err := rows.Scan(
+			&d.DiscountID, &d.DiscountName, &d.DiscountType, &d.DiscountValue,
+			&d.StartDate, &d.EndDate, &d.Note, &d.UpdateBy, &d.UpdateDate, &d.IDStatus,
+		); err != nil {
 			log.Println(err)
 			return c.Status(500).JSON(models.ApiResponse{
 				Status:  "error",
@@ -169,13 +185,13 @@ func SelectPublisherTypeByName(c *fiber.Ctx) error {
 				Data:    nil,
 			})
 		}
-		result = append(result, pt)
+		list = append(list, d)
 	}
 
-	if len(result) == 0 {
+	if len(list) == 0 {
 		return c.Status(404).JSON(models.ApiResponse{
 			Status:  "error",
-			Message: "No matching publisher type found",
+			Message: "No matching discount found",
 			Data:    nil,
 		})
 	}
@@ -183,30 +199,34 @@ func SelectPublisherTypeByName(c *fiber.Ctx) error {
 	return c.JSON(models.ApiResponse{
 		Status:  "success",
 		Message: "",
-		Data:    result,
+		Data:    list,
 	})
 }
 
-func InsertPublisherType(c *fiber.Ctx) error {
-	var pt models.PublisherType
-	if err := c.BodyParser(&pt); err != nil {
+func InsertDiscount(c *fiber.Ctx) error {
+	var d models.Discount
+	if err := c.BodyParser(&d); err != nil {
 		return c.Status(400).JSON(models.ApiResponse{
 			Status:  "error",
 			Message: "Invalid request body",
 			Data:    nil,
 		})
 	}
-
 	query := `
-		INSERT INTO tb_publisher_type (type_name, description, update_by)
-		VALUES (@TypeName, @Description, @UpdateBy)
+		INSERT INTO tb_discount (discount_name, discount_type, discount_value,
+			start_date, end_date, note, update_by)
+		VALUES (@Name, @Type, @Value, @Start, @End, @Note, @UpdateBy)
 	`
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
 			_, err := tx.Exec(query,
-				sql.Named("TypeName", pt.TypeName),
-				sql.Named("Description", pt.Description),
-				sql.Named("UpdateBy", pt.UpdateBy),
+				sql.Named("Name", d.DiscountName),
+				sql.Named("Type", d.DiscountType),
+				sql.Named("Value", d.DiscountValue),
+				sql.Named("Start", d.StartDate),
+				sql.Named("End", d.EndDate),
+				sql.Named("Note", d.Note),
+				sql.Named("UpdateBy", d.UpdateBy),
 			)
 			return err
 		},
@@ -215,42 +235,48 @@ func InsertPublisherType(c *fiber.Ctx) error {
 		log.Println(err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
-			Message: "Failed to insert publisher type",
+			Message: "Failed to insert discount",
 			Data:    nil,
 		})
 	}
-
 	return c.Status(201).JSON(models.ApiResponse{
 		Status:  "success",
-		Message: "Publisher type added successfully",
+		Message: "Discount added successfully",
 		Data:    nil,
 	})
 }
 
-func UpdatePublisherTypeByID(c *fiber.Ctx) error {
+func UpdateDiscountByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	var pt models.PublisherType
-	if err := c.BodyParser(&pt); err != nil {
+	var d models.Discount
+	if err := c.BodyParser(&d); err != nil {
 		return c.Status(400).JSON(models.ApiResponse{
 			Status:  "error",
 			Message: "Invalid request body",
 			Data:    nil,
 		})
 	}
-
 	query := `
-		UPDATE tb_publisher_type
-		SET type_name = COALESCE(NULLIF(@TypeName, ''), type_name),
-			description = @Description,
+		UPDATE tb_discount
+		SET discount_name = COALESCE(NULLIF(@Name, ''), discount_name),
+			discount_type = COALESCE(NULLIF(@Type, ''), discount_type),
+			discount_value = @Value,
+			start_date = @Start,
+			end_date = @End,
+			note = @Note,
 			update_by = @UpdateBy
-		WHERE publisher_type_id = @ID AND is_delete = 0
+		WHERE discount_id = @ID AND is_delete = 0
 	`
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
 			_, err := tx.Exec(query,
-				sql.Named("TypeName", pt.TypeName),
-				sql.Named("Description", pt.Description),
-				sql.Named("UpdateBy", pt.UpdateBy),
+				sql.Named("Name", d.DiscountName),
+				sql.Named("Type", d.DiscountType),
+				sql.Named("Value", d.DiscountValue),
+				sql.Named("Start", d.StartDate),
+				sql.Named("End", d.EndDate),
+				sql.Named("Note", d.Note),
+				sql.Named("UpdateBy", d.UpdateBy),
 				sql.Named("ID", id),
 			)
 			return err
@@ -260,24 +286,24 @@ func UpdatePublisherTypeByID(c *fiber.Ctx) error {
 		log.Println(err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
-			Message: "Failed to update publisher type",
+			Message: "Failed to update discount",
 			Data:    nil,
 		})
 	}
 	return c.JSON(models.ApiResponse{
 		Status:  "success",
-		Message: "Publisher type updated successfully",
+		Message: "Discount updated successfully",
 		Data:    nil,
 	})
 }
 
-func DeletePublisherTypeByID(c *fiber.Ctx) error {
+func DeleteDiscountByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 	query := `
-		UPDATE tb_publisher_type
+		UPDATE tb_discount
 		SET is_delete = 1,
-			update_date = CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'SE Asia Standard Time' AS DATETIME)
-		WHERE publisher_type_id = @ID
+		    update_date = CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'SE Asia Standard Time' AS DATETIME)
+		WHERE discount_id = @ID
 	`
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
@@ -289,20 +315,20 @@ func DeletePublisherTypeByID(c *fiber.Ctx) error {
 		log.Println(err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
-			Message: "Failed to soft delete publisher type",
+			Message: "Failed to soft delete discount",
 			Data:    nil,
 		})
 	}
 	return c.JSON(models.ApiResponse{
 		Status:  "success",
-		Message: "Publisher type marked as deleted",
+		Message: "Discount marked as deleted",
 		Data:    nil,
 	})
 }
 
-func RemovePublisherTypeByID(c *fiber.Ctx) error {
+func RemoveDiscountByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	query := `DELETE FROM tb_publisher_type WHERE publisher_type_id = @ID`
+	query := `DELETE FROM tb_discount WHERE discount_id = @ID`
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
 			_, err := tx.Exec(query, sql.Named("ID", id))
@@ -313,13 +339,13 @@ func RemovePublisherTypeByID(c *fiber.Ctx) error {
 		log.Println(err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
-			Message: "Failed to hard delete publisher type",
+			Message: "Failed to hard delete discount",
 			Data:    nil,
 		})
 	}
 	return c.JSON(models.ApiResponse{
 		Status:  "success",
-		Message: "Publisher type removed successfully",
+		Message: "Discount removed successfully",
 		Data:    nil,
 	})
 }

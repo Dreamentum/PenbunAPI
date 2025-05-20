@@ -1,10 +1,10 @@
 package routes
 
 import (
-	"os"
-	"database/sql"
 	"PenbunAPI/controllers"
 	"PenbunAPI/middleware"
+	"database/sql"
+	"os"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -21,6 +21,5 @@ func RegisterV2Routes(app *fiber.App, db *sql.DB) {
 	protected := v2.Group("/protected")
 
 	protected.Use(middleware.JWTMiddleware(os.Getenv("JWT_SECRET")))
-	protected.Get("/books", controllers.GetAllBooks) // ดึงหนังสือทั้งหมด
-	protected.Get("/books/:id", controllers.GetBook) // ดึงหนังสือตาม ID
+	protected.Post("/refresh", controllers.RefreshToken) // Route สำหรับ Refresh Token
 }

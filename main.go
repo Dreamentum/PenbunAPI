@@ -55,8 +55,13 @@ func main() {
 		StrictRouting:     true,
 		EnablePrintRoutes: true,
 		ServerHeader:      "Fiber",
-		AppName:           "PENBUN API v1.5.6",
+		AppName:           "PENBUN API v1.6.0",
 	})
+
+	// ✅ Serve favicon.ico
+	// app.Get("/favicon.ico", func(c *fiber.Ctx) error {
+	// 	return c.SendStatus(fiber.StatusNoContent) // หรือใช้ StatusOK ก็ได้
+	// })
 
 	// ใช้ JWTMiddleware ระดับ Global
 	// app.Use(middleware.JWTMiddleware(os.GetEnv("JWT_SECRET")))

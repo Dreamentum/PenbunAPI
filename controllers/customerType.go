@@ -3,12 +3,13 @@ package controllers
 import (
 	"PenbunAPI/config"
 	"PenbunAPI/models"
+	"PenbunAPI/utils"
 	"database/sql"
+	"log"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-// 1. Select All
 func SelectAllCustomerTypes(c *fiber.Ctx) error {
 	query := `
 		SELECT customer_type_id, type_name, description, update_by, update_date, id_status
@@ -17,7 +18,12 @@ func SelectAllCustomerTypes(c *fiber.Ctx) error {
 	`
 	rows, err := config.DB.Query(query)
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch data"})
+		log.Println(err)
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to fetch customer types",
+			Data:    nil,
+		})
 	}
 	defer rows.Close()
 
@@ -25,21 +31,30 @@ func SelectAllCustomerTypes(c *fiber.Ctx) error {
 	for rows.Next() {
 		var item models.CustomerType
 		if err := rows.Scan(&item.CustomerTypeID, &item.TypeName, &item.Description, &item.UpdateBy, &item.UpdateDate, &item.IDStatus); err != nil {
-			return c.Status(500).JSON(fiber.Map{"error": "Failed to read row"})
+			log.Println(err)
+			return c.Status(500).JSON(models.ApiResponse{
+				Status:  "error",
+				Message: "Failed to read data",
+				Data:    nil,
+			})
 		}
 		list = append(list, item)
 	}
-	return c.JSON(list)
+
+	return c.JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "",
+		Data:    list,
+	})
 }
 
-// 2. Select Paging
 func SelectPageCustomerTypes(c *fiber.Ctx) error {
 	page := c.QueryInt("page", 1)
 	limit := c.QueryInt("limit", 10)
 	offset := (page - 1) * limit
 
 	query := `
-		SELECT customer_type_id, type_name, description, update_by, update_date
+		SELECT customer_type_id, type_name, description, update_by, update_date, id_status
 		FROM tb_customer_type
 		WHERE is_delete = 0
 		ORDER BY update_date DESC
@@ -47,22 +62,51 @@ func SelectPageCustomerTypes(c *fiber.Ctx) error {
 	`
 	rows, err := config.DB.Query(query, sql.Named("Offset", offset), sql.Named("Limit", limit))
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch data"})
+		log.Println(err)
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to fetch customer types",
+			Data:    nil,
+		})
 	}
 	defer rows.Close()
 
 	var list []models.CustomerType
 	for rows.Next() {
 		var item models.CustomerType
-		if err := rows.Scan(&item.CustomerTypeID, &item.TypeName, &item.Description, &item.UpdateBy, &item.UpdateDate); err != nil {
-			return c.Status(500).JSON(fiber.Map{"error": "Failed to read row"})
+		if err := rows.Scan(&item.CustomerTypeID, &item.TypeName, &item.Description, &item.UpdateBy, &item.UpdateDate, &item.IDStatus); err != nil {
+			log.Println(err)
+			return c.Status(500).JSON(models.ApiResponse{
+				Status:  "error",
+				Message: "Failed to read data",
+				Data:    nil,
+			})
 		}
 		list = append(list, item)
 	}
-	return c.JSON(fiber.Map{"page": page, "limit": limit, "data": list})
+
+	var total int
+	err = config.DB.QueryRow(`SELECT COUNT(*) FROM tb_customer_type WHERE is_delete = 0`).Scan(&total)
+	if err != nil {
+		log.Println(err)
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to count records",
+			Data:    nil,
+		})
+	}
+
+	return c.JSON(models.ApiResponse{
+		Status: "success",
+		Data: fiber.Map{
+			"page":         page,
+			"limit":        limit,
+			"total":        total,
+			"customerType": list,
+		},
+	})
 }
 
-// 3. Select By ID
 func SelectCustomerTypeByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 	query := `
@@ -71,88 +115,215 @@ func SelectCustomerTypeByID(c *fiber.Ctx) error {
 		WHERE customer_type_id = @ID AND is_delete = 0
 	`
 	row := config.DB.QueryRow(query, sql.Named("ID", id))
+
 	var item models.CustomerType
 	if err := row.Scan(&item.CustomerTypeID, &item.TypeName, &item.Description, &item.UpdateBy, &item.UpdateDate, &item.IDStatus); err != nil {
 		if err == sql.ErrNoRows {
-			return c.Status(404).JSON(fiber.Map{"error": "Not found"})
+			return c.Status(404).JSON(models.ApiResponse{
+				Status:  "error",
+				Message: "Customer type not found",
+				Data:    nil,
+			})
 		}
-		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch data"})
+		log.Println(err)
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to read data",
+			Data:    nil,
+		})
 	}
-	return c.JSON(item)
+
+	return c.JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "",
+		Data:    item,
+	})
 }
 
-// 4. Insert
+func SelectCustomerTypeByName(c *fiber.Ctx) error {
+	name := c.Params("name")
+	query := `
+		SELECT customer_type_id, type_name, description, update_by, update_date, id_status
+		FROM tb_customer_type
+		WHERE type_name LIKE '%' + @Name + '%' AND is_delete = 0
+	`
+	rows, err := config.DB.Query(query, sql.Named("Name", name))
+	if err != nil {
+		log.Println(err)
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to fetch customer types",
+			Data:    nil,
+		})
+	}
+	defer rows.Close()
+
+	var results []models.CustomerType
+	for rows.Next() {
+		var item models.CustomerType
+		if err := rows.Scan(&item.CustomerTypeID, &item.TypeName, &item.Description, &item.UpdateBy, &item.UpdateDate, &item.IDStatus); err != nil {
+			log.Println(err)
+			return c.Status(500).JSON(models.ApiResponse{
+				Status:  "error",
+				Message: "Failed to read data",
+				Data:    nil,
+			})
+		}
+		results = append(results, item)
+	}
+
+	if len(results) == 0 {
+		return c.Status(404).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "No matching customer type found",
+			Data:    nil,
+		})
+	}
+
+	return c.JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "",
+		Data:    results,
+	})
+}
+
 func InsertCustomerType(c *fiber.Ctx) error {
 	var item models.CustomerType
 	if err := c.BodyParser(&item); err != nil {
-		return c.Status(400).JSON(fiber.Map{"error": "Invalid body"})
+		return c.Status(400).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Invalid request body",
+			Data:    nil,
+		})
 	}
+
 	query := `
 		INSERT INTO tb_customer_type (type_name, description, update_by)
 		VALUES (@TypeName, @Description, @UpdateBy)
 	`
-	_, err := config.DB.Exec(query,
-		sql.Named("TypeName", item.TypeName),
-		sql.Named("Description", item.Description),
-		sql.Named("UpdateBy", item.UpdateBy),
-	)
+
+	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
+		func(tx *sql.Tx) error {
+			_, err := tx.Exec(query,
+				sql.Named("TypeName", item.TypeName),
+				sql.Named("Description", item.Description),
+				sql.Named("UpdateBy", item.UpdateBy),
+			)
+			return err
+		},
+	})
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": "Failed to insert"})
+		log.Println(err)
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to insert customer type",
+			Data:    nil,
+		})
 	}
-	return c.Status(201).JSON(fiber.Map{"message": "Created"})
+
+	return c.Status(201).JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "Customer type added successfully",
+		Data:    nil,
+	})
 }
 
-// 5. Update By ID
 func UpdateCustomerTypeByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 	var item models.CustomerType
 	if err := c.BodyParser(&item); err != nil {
-		return c.Status(400).JSON(fiber.Map{"error": "Invalid body"})
+		return c.Status(400).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Invalid request body",
+			Data:    nil,
+		})
 	}
+
 	query := `
 		UPDATE tb_customer_type
-		SET type_name = @TypeName, description = @Description, update_by = @UpdateBy
+		SET type_name = COALESCE(NULLIF(@TypeName, ''), type_name),
+			description = @Description,
+			update_by = @UpdateBy
 		WHERE customer_type_id = @ID AND is_delete = 0
 	`
-	_, err := config.DB.Exec(query,
-		sql.Named("TypeName", item.TypeName),
-		sql.Named("Description", item.Description),
-		sql.Named("UpdateBy", item.UpdateBy),
-		sql.Named("ID", id),
-	)
+
+	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
+		func(tx *sql.Tx) error {
+			_, err := tx.Exec(query,
+				sql.Named("TypeName", item.TypeName),
+				sql.Named("Description", item.Description),
+				sql.Named("UpdateBy", item.UpdateBy),
+				sql.Named("ID", id),
+			)
+			return err
+		},
+	})
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": "Failed to update"})
+		log.Println(err)
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to update customer type",
+			Data:    nil,
+		})
 	}
-	return c.JSON(fiber.Map{"message": "Updated"})
+
+	return c.JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "Customer type updated successfully",
+		Data:    nil,
+	})
 }
 
-// 6. Delete (Soft)
 func DeleteCustomerTypeByID(c *fiber.Ctx) error {
-	customerTypeID := c.Params("id")
-
+	id := c.Params("id")
 	query := `
 		UPDATE tb_customer_type
 		SET is_delete = 1,
 		    id_status = 0,
-		    update_date = GETDATE()
-		WHERE customer_type_id = @CustomerTypeID
+		    update_date = CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'SE Asia Standard Time' AS DATETIME)
+		WHERE customer_type_id = @ID
 	`
-
-	_, err := config.DB.Exec(query, sql.Named("CustomerTypeID", customerTypeID))
+	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
+		func(tx *sql.Tx) error {
+			_, err := tx.Exec(query, sql.Named("ID", id))
+			return err
+		},
+	})
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to soft delete customer type"})
+		log.Println(err)
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to soft delete customer type",
+			Data:    nil,
+		})
 	}
-
-	return c.JSON(fiber.Map{"message": "Soft deleted"})
+	return c.JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "Customer type marked as deleted",
+		Data:    nil,
+	})
 }
 
-// 7. Remove (Hard)
 func RemoveCustomerTypeByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 	query := `DELETE FROM tb_customer_type WHERE customer_type_id = @ID`
-	_, err := config.DB.Exec(query, sql.Named("ID", id))
+	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
+		func(tx *sql.Tx) error {
+			_, err := tx.Exec(query, sql.Named("ID", id))
+			return err
+		},
+	})
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": "Failed to remove"})
+		log.Println(err)
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to hard delete customer type",
+			Data:    nil,
+		})
 	}
-	return c.JSON(fiber.Map{"message": "Hard deleted"})
+	return c.JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "Customer type removed successfully",
+		Data:    nil,
+	})
 }
