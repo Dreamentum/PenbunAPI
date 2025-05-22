@@ -1,5 +1,5 @@
 
-# 🅿️ **PenbunAPI v1.6.1** [BETA]
+# 🅿️ **PenbunAPI v1.6.2**
 
 PenbunAPI is a RESTful API designed to manage the distribution and supply of books and stationery. It provides robust features for inventory management, order processing, and user authentication using JWT.
 
@@ -32,6 +32,10 @@ PenbunAPI is a RESTful API designed to manage the distribution and supply of boo
 | 7  | Delete By ID     | Soft Delete โดย Update `is_delete = 1` เท่านั้น             |
 | 8  | Remove By ID     | Hard Delete การลบข้อมูลออกจาก Database จริง ๆ              |
 
+- Every Insert/Update/Delete uses centralized `executeTransaction()` from `utils/transaction.go`
+- All responses wrapped with `models.ApiResponse`
+
+
 ---
 
 > หมายเหตุเพิ่มเติม:
@@ -48,7 +52,7 @@ PenbunAPI is a RESTful API designed to manage the distribution and supply of boo
 ```
 - ฟังก์ชัน Select By NAME ยังไม่มีการ Implement
 
-## ↩️ **Previous Version**
+## ↩️ **Previous Version** (1.6.X)
 - **Authentication**: Secure login with JWT-based authentication.
 - **Inventory Management**: CRUD operations for books, book types, and references.
 - **Order and Delivery**: Manage orders and deliveries.
@@ -58,27 +62,20 @@ PenbunAPI is a RESTful API designed to manage the distribution and supply of boo
 - **Publisher Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Publisher
 - **Customer Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Customer
 - **Discount Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Discount
+- **Select By Name**: เพิ่มฟังก์ชันสำหรับทุกโมดูล แต่ยังไม่มีการ implement!!
+- ** ใช้ `executeTransaction` จาก `utils/transaction.go`
+- ** ใช้ `models.ApiResponse` เป็นมาตรฐานการตอบกลับ  
+- ** ปรับรูปแบบ Response ให้เป็น `models.ApiResponse` แบบมี key ทุกจุด
+- ** เพิ่ม Book API (`tb_book`) พร้อม 8 ฟังก์ชัน
+- ** รองรับ LIKE Search ใน `Publisher`, `Book`, `Customer`, `Type` ทุกประเภท
 
-## 📦 **New in v1.6.1**
-
-- ✅ เพิ่ม Discount Type API พร้อม 8 ฟังก์ชัน (Select All, Page, By ID, By NAME, Insert, Update, Soft Delete, Hard Delete)
-- ✅ ทุกคำสั่งใช้ `Transaction` ป้องกันข้อมูลเสียหาย
-- ✅ เพิ่ม **Select By Name** ให้ครบทั้ง 8 ฟังก์ชันสำหรับทุกโมดูล
-- ✅ ใช้ `executeTransaction` จาก `utils/transaction.go`
-- ✅ ใช้ `models.ApiResponse` เป็นมาตรฐานการตอบกลับ  
-- ✅ ปรับรูปแบบ Response ให้เป็น `models.ApiResponse` แบบมี key ทุกจุด
-- ✅ เพิ่ม Book API (`tb_book`) พร้อม 8 ฟังก์ชัน
-- ✅ รองรับ LIKE Search ใน `Publisher`, `Book`, `Customer`, `Type` ทุกประเภท
-
-| Method | Endpoint               | Description                         | Body Example |
-|--------|------------------------|-------------------------------------|--------------|
-| POST   | /insert                | เพิ่ม Publisher ใหม่                | `{ "publisher_name": "...", "discount_id": "DISC001" }` |
-| GET    | /select/all            | ดึง Publisher ทั้งหมด              | —            |
-| GET    | /select/page?page=1   | ดึง Publisher แบบ Paging            | —            |
-| GET    | /select/:id           | ดึง Publisher ตามรหัส              | —            |
-| PUT    | /update/:id           | อัปเดต Publisher ตามรหัส           | `{ "publisher_name": "...", "discount_id": "DISC002" }` |
-| PUT    | /delete/:id           | Soft Delete (`is_delete = 1`)       | —            |
-| DELETE | /remove/:id           | ลบออกจากฐานข้อมูลจริง              | —            |
+## 📦 **New in v1.6.2**
+- ✅ Every Insert/Update/Delete uses centralized `executeTransaction()` from `utils/transaction.go`
+- ✅ All responses wrapped with `models.ApiResponse`
+- ✅ `Publisher` API now returns `publisher_type_name` via JOIN for better usability
+- ✅ Updated all models to use `*string` for nullable fields
+- ✅ Bug fixes and code cleanups for consistency
+- ✅ JOIN type_name in Publisher for display name better than type id 
 
 ---
 
@@ -103,7 +100,7 @@ PenbunAPI/
 │   ├── customerType.go   # Customer Type management endpoints
 │   ├── book.go           # Book management endpoints
 │   ├── bookType.go       # Book Type management endpoints
-│   └── discountType.go   # ✅ Discount Type management endpoints
+│   └── discountType.go   # Discount Type management endpoints
 │
 ├── models/
 │   ├── user.go           # User-related structs and logic
@@ -114,7 +111,7 @@ PenbunAPI/
 │   ├── references.go     # Reference-related structs and logic
 │   ├── book.go           # Book management structs and logic
 │   ├── bookType.go       # Book Type management structs and logic
-│   └── discountType.go   # ✅ Discount Type management structs and logic
+│   └── discountType.go   # Discount Type management structs and logic
 │
 ├── routes/
 │   ├── public.go         # Public API version routes
@@ -139,7 +136,7 @@ PenbunAPI/
 API Endpoints
 -----------------------
 
-# PenbunAPI v1.6.1
+# PenbunAPI v1.6.2
 
 ### 📗 Book API 
 ### Base Path: (`/api/v1/protected/book`)

@@ -12,11 +12,13 @@ import (
 
 func SelectAllPublisher(c *fiber.Ctx) error {
 	query := `
-		SELECT publisher_code, publisher_type_id, publisher_name, contact_name1, contact_name2,
-		       email, phone1, phone2, address, district, province, zip_code,
-			   note, discount_id, update_by, update_date, id_status
-		FROM tb_publisher
-		WHERE is_delete = 0
+		SELECT p.publisher_code, p.publisher_type_id, pt.type_name, p.publisher_name, 
+			p.contact_name1, p.contact_name2, p.email, p.phone1, p.phone2, 
+			p.address, p.district, p.province, p.zip_code, 
+			p.note, p.discount_id, p.update_by, p.update_date, p.id_status
+		FROM tb_publisher p
+		LEFT JOIN tb_publisher_type pt ON p.publisher_type_id = pt.publisher_type_id
+		WHERE p.is_delete = 0
 	`
 	rows, err := config.DB.Query(query)
 	if err != nil {
@@ -62,11 +64,14 @@ func SelectPagePublisher(c *fiber.Ctx) error {
 	offset := (page - 1) * limit
 
 	query := `
-		SELECT publisher_code, publisher_type_id, publisher_name, contact_name1, contact_name2,
-		       email, phone1, phone2, address, district, province, zip_code,
-			   note, discount_id, update_by, update_date, id_status
-		FROM tb_publisher
-		WHERE is_delete = 0
+		SELECT p.publisher_code, p.publisher_type_id, pt.type_name, p.publisher_name, 
+			p.contact_name1, p.contact_name2, p.email, p.phone1, p.phone2, 
+			p.address, p.district, p.province, p.zip_code, 
+			p.note, p.discount_id, p.update_by, p.update_date, p.id_status
+		FROM tb_publisher p
+		LEFT JOIN tb_publisher_type pt ON p.publisher_type_id = pt.publisher_type_id
+		WHERE p.is_delete = 0
+
 		ORDER BY update_date DESC
 		OFFSET @Offset ROWS FETCH NEXT @Limit ROWS ONLY
 	`
@@ -85,7 +90,8 @@ func SelectPagePublisher(c *fiber.Ctx) error {
 	for rows.Next() {
 		var p models.Publisher
 		if err := rows.Scan(
-			&p.PublisherCode, &p.PublisherTypeID, &p.PublisherName,
+			&p.PublisherCode, &p.PublisherTypeID, &p.PublisherTypeName, // 👈 รับ type_name จาก JOIN
+			&p.PublisherName,
 			&p.ContactName1, &p.ContactName2,
 			&p.Email, &p.Phone1, &p.Phone2,
 			&p.Address, &p.District, &p.Province, &p.ZipCode,
