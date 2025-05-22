@@ -138,32 +138,37 @@ API Endpoints
 
 # PenbunAPI v1.6.2
 
-### 📗 Book API 
-### Base Path: (`/api/v1/protected/book`)
+## 📘 BookType API
+### Base Path: `/api/v1/protected/booktype`
 
 | Method   | Endpoint                      | Description                                  | Required Headers                 | Body Example |
 |----------|-------------------------------|----------------------------------------------|----------------------------------|--------------|
-| `POST`   | `/insert`                     | เพิ่มข้อมูลหนังสือใหม่                      | `Authorization: Bearer <token>` | `{ "book_name": "คณิตศาสตร์ ม.3", "book_type_id": "BKTYP001", "publisher_code": "PUB001", "book_price": 120.0, "book_discount": 20.0, "update_by": "admin" }` |
-| `GET`    | `/select/all`                 | ดึงข้อมูลหนังสือทั้งหมด                    | `Authorization: Bearer <token>` | — |
-| `GET`    | `/select/page?page=1&limit=10`| ดึงข้อมูลหนังสือแบบ Paging                  | `Authorization: Bearer <token>` | — |
-| `GET`    | `/select/:id`                 | ดึงข้อมูลหนังสือตาม book_code              | `Authorization: Bearer <token>` | — |
-| `GET`    | `/select/:name`               | ดึงข้อมูลหนังสือตามชื่อ (Like Search)      | `Authorization: Bearer <token>` | — |
-| `PUT`    | `/update/:id`                 | อัปเดตข้อมูลหนังสือตามรหัส                | `Authorization: Bearer <token>` | `{ "book_name": "ฟิสิกส์ ม.3", "book_price": 140.0, "book_discount": 15.0, "update_by": "editor" }` |
-| `PUT`    | `/delete/:id`                 | ลบข้อมูลแบบ Soft Delete (`is_delete = 1`)  | `Authorization: Bearer <token>` | — |
-| `DELETE` | `/remove/:id`                 | ลบข้อมูลออกจากฐานข้อมูล (Hard Delete)     | `Authorization: Bearer <token>` | — |
-
-### 📘 Book Type API 
-### Base Path: (`/api/v1/protected/booktype`)
-
-| Method   | Endpoint                      | Description                                  | Required Headers                 | Body Example |
-|----------|-------------------------------|----------------------------------------------|----------------------------------|--------------|
-| `POST`   | `/insert`                     | เพิ่มข้อมูลประเภทหนังสือใหม่               | `Authorization: Bearer <token>` | `{ "type_name": "วิทยาศาสตร์", "description": "หนังสือเกี่ยวกับวิทยาศาสตร์", "update_by": "admin" }` |
+| `POST`   | `/insert`                     | เพิ่มข้อมูลประเภทหนังสือใหม่               | `Authorization: Bearer <token>` | `{ "type_name": "Science", "description": "วิทยาศาสตร์", "update_by": "admin" }` |
 | `GET`    | `/select/all`                 | ดึงข้อมูลทั้งหมด (is_delete = 0)           | `Authorization: Bearer <token>` | — |
 | `GET`    | `/select/page?page=1&limit=10`| ดึงข้อมูลแบบ Paging                         | `Authorization: Bearer <token>` | — |
-| `GET`    | `/select/:id`                 | ดึงข้อมูลประเภทหนังสือตาม ID               | `Authorization: Bearer <token>` | — |
-| `PUT`    | `/update/:id`                 | อัปเดตข้อมูลประเภทหนังสือ                  | `Authorization: Bearer <token>` | `{ "type_name": "วิทย์สุขภาพ", "description": "อัปเดตหมวดวิทยาศาสตร์สุขภาพ", "update_by": "editor" }` |
-| `PUT`    | `/delete/:id`                 | ลบข้อมูลแบบ Soft Delete (`is_delete = 1`)  | `Authorization: Bearer <token>` | — |
-| `DELETE` | `/remove/:id`                 | ลบข้อมูลออกจากฐานข้อมูล (Hard Delete)     | `Authorization: Bearer <token>` | — |
+| `GET`    | `/select/:id`                 | ดึงข้อมูลตาม ID                             | `Authorization: Bearer <token>` | — |
+| `GET`    | `/select/:name`               | ดึงข้อมูลตาม Name (LIKE)                    | `Authorization: Bearer <token>` | — |
+| `PUT`    | `/update/:id`                 | อัปเดตข้อมูลประเภทหนังสือ                  | `Authorization: Bearer <token>` | `{ "type_name": "Health Sci", "description": "หมวดสุขภาพ", "update_by": "admin" }` |
+| `PUT`    | `/delete/:id`                 | Soft Delete (`is_delete = 1`)                | `Authorization: Bearer <token>` | — |
+| `DELETE` | `/remove/:id`                 | ลบข้อมูลจริงจากฐานข้อมูล                   | `Authorization: Bearer <token>` | — |
+
+---
+
+## 📗 Book API
+### Base Path: `/api/v1/protected/book`
+
+| Method   | Endpoint                      | Description                                  | Required Headers                 | Body Example |
+|----------|-------------------------------|----------------------------------------------|----------------------------------|--------------|
+| `POST`   | `/insert`                     | เพิ่มหนังสือใหม่                            | `Authorization: Bearer <token>` | `{ "book_name": "AI for Everyone", "book_type_id": "BKTYP0001", "publisher_code": "PUB001", "book_price": 299.0, "book_discount": 50.0, "update_by": "admin" }` |
+| `GET`    | `/select/all`                 | ดึงหนังสือทั้งหมด                          | `Authorization: Bearer <token>` | — |
+| `GET`    | `/select/page?page=1&limit=10`| ดึงหนังสือแบบแบ่งหน้า                      | `Authorization: Bearer <token>` | — |
+| `GET`    | `/select/:id`                 | ดึงหนังสือตาม book_code                     | `Authorization: Bearer <token>` | — |
+| `GET`    | `/select/:name`               | ดึงหนังสือโดยใช้ LIKE จาก book_name        | `Authorization: Bearer <token>` | — |
+| `PUT`    | `/update/:id`                 | อัปเดตข้อมูลหนังสือ                         | `Authorization: Bearer <token>` | `{ "book_name": "AI Revised", "book_discount": 80.0, "update_by": "editor" }` |
+| `PUT`    | `/delete/:id`                 | Soft Delete (`is_delete = 1`)                | `Authorization: Bearer <token>` | — |
+| `DELETE` | `/remove/:id`                 | ลบข้อมูลจริงจากฐานข้อมูล                   | `Authorization: Bearer <token>` | — |
+
+---
 
 ### 👨‍👩‍👧‍👧 Customer API 
 ### Base Path: (`/api/v1/protected/customer`)
