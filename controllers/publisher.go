@@ -13,10 +13,8 @@ import (
 func SelectAllPublisher(c *fiber.Ctx) error {
 	query := `
 		SELECT 
-			p.publisher_code, 
-			p.publisher_name, 
-			p.publisher_type_id, 
-			pt.type_name AS publisher_type_name, 
+			p.publisher_code, p.publisher_name, 
+			p.publisher_type_id, pt.type_name AS publisher_type_name, 
 			p.contact_name1, p.contact_name2, 
 			p.email, p.phone1, p.phone2, 
 			p.address, p.district, p.province, p.zip_code, 
@@ -77,19 +75,23 @@ func SelectPagePublisher(c *fiber.Ctx) error {
 	offset := (page - 1) * limit
 
 	query := `
-		SELECT p.publisher_code, p.publisher_name, 
-		    p.publisher_type_id, pt.type_name, 
-		    p.contact_name1, p.contact_name2, 
+		SELECT 
+			p.publisher_code, p.publisher_name, 
+			p.publisher_type_id, pt.type_name AS publisher_type_name, 
+			p.contact_name1, p.contact_name2, 
 			p.email, p.phone1, p.phone2, 
 			p.address, p.district, p.province, p.zip_code, 
-			p.note, p.discount_id, p.update_by, p.update_date, p.id_status
+			p.note, 
+			p.discount_id, d.discount_name,
+			p.update_by, p.update_date, p.id_status
 		FROM tb_publisher p
 		LEFT JOIN tb_publisher_type pt ON p.publisher_type_id = pt.publisher_type_id
+		LEFT JOIN tb_discount d ON p.discount_id = d.discount_id
 		WHERE p.is_delete = 0
-
-		ORDER BY update_date DESC
+		ORDER BY p.update_date DESC
 		OFFSET @Offset ROWS FETCH NEXT @Limit ROWS ONLY
 	`
+
 	rows, err := config.DB.Query(query, sql.Named("Offset", offset), sql.Named("Limit", limit))
 	if err != nil {
 		log.Println(err)
@@ -106,11 +108,13 @@ func SelectPagePublisher(c *fiber.Ctx) error {
 		var p models.Publisher
 		if err := rows.Scan(
 			&p.PublisherCode, &p.PublisherName,
-			&p.PublisherTypeID, &p.PublisherTypeName, // 👈 รับ type_name จาก JOIN
+			&p.PublisherTypeID, &p.PublisherTypeName,
 			&p.ContactName1, &p.ContactName2,
 			&p.Email, &p.Phone1, &p.Phone2,
 			&p.Address, &p.District, &p.Province, &p.ZipCode,
-			&p.Note, &p.DiscountID, &p.UpdateBy, &p.UpdateDate, &p.IDStatus,
+			&p.Note,
+			&p.DiscountID, &p.DiscountName,
+			&p.UpdateBy, &p.UpdateDate, &p.IDStatus,
 		); err != nil {
 			log.Println(err)
 			return c.Status(500).JSON(models.ApiResponse{
@@ -147,22 +151,29 @@ func SelectPagePublisher(c *fiber.Ctx) error {
 func SelectPublisherByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 	query := `
-		SELECT publisher_code, publisher_type_id, publisher_name, discount_id, discount_name,
-			   contact_name1, contact_name2,
-		       email, phone1, phone2, address, district, province, zip_code,
-			   note, update_by, update_date, id_status
-		FROM tb_publisher
-		WHERE publisher_code = @ID AND is_delete = 0
+		SELECT 
+			p.publisher_code, p.publisher_name, p.publisher_type_id, 
+			p.discount_id, d.discount_name,
+			p.contact_name1, p.contact_name2,
+			p.email, p.phone1, p.phone2, 
+			p.address, p.district, p.province, p.zip_code,
+			p.note, 
+			p.update_by, p.update_date, p.id_status
+		FROM tb_publisher p
+		LEFT JOIN tb_discount d ON p.discount_id = d.discount_id -- ✅ JOIN
+		WHERE p.publisher_code = @ID AND p.is_delete = 0
 	`
 	row := config.DB.QueryRow(query, sql.Named("ID", id))
 
 	var p models.Publisher
 	if err := row.Scan(
-		&p.PublisherCode, &p.PublisherTypeID, &p.PublisherName, &p.DiscountID, &p.DiscountName,
+		&p.PublisherCode, &p.PublisherName, &p.PublisherTypeID,
+		&p.DiscountID, &p.DiscountName,
 		&p.ContactName1, &p.ContactName2,
 		&p.Email, &p.Phone1, &p.Phone2,
 		&p.Address, &p.District, &p.Province, &p.ZipCode,
-		&p.Note, &p.UpdateBy, &p.UpdateDate, &p.IDStatus,
+		&p.Note,
+		&p.UpdateBy, &p.UpdateDate, &p.IDStatus,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return c.Status(404).JSON(models.ApiResponse{
@@ -189,11 +200,20 @@ func SelectPublisherByID(c *fiber.Ctx) error {
 func SelectPublisherByName(c *fiber.Ctx) error {
 	name := c.Params("name")
 	query := `
-		SELECT publisher_code, publisher_type_id, publisher_name, contact_name1, contact_name2,
-		       email, phone1, phone2, address, district, province, zip_code,
-			   note, discount_id, update_by, update_date, id_status
-		FROM tb_publisher
-		WHERE publisher_name LIKE '%' + @Name + '%' AND is_delete = 0
+		SELECT 
+			p.publisher_code, 
+			p.publisher_type_id, pt.type_name,
+			p.publisher_name, 
+			p.contact_name1, p.contact_name2,
+			p.email, p.phone1, p.phone2,
+			p.address, p.district, p.province, p.zip_code,
+			p.note, 
+			p.discount_id, d.discount_name, -- ✅ join discount_name
+			p.update_by, p.update_date, p.id_status
+		FROM tb_publisher p
+		LEFT JOIN tb_publisher_type pt ON p.publisher_type_id = pt.publisher_type_id
+		LEFT JOIN tb_discount d ON p.discount_id = d.discount_id
+		WHERE p.publisher_name LIKE '%' + @Name + '%' AND p.is_delete = 0
 	`
 	rows, err := config.DB.Query(query, sql.Named("Name", name))
 	if err != nil {
@@ -210,11 +230,15 @@ func SelectPublisherByName(c *fiber.Ctx) error {
 	for rows.Next() {
 		var p models.Publisher
 		if err := rows.Scan(
-			&p.PublisherCode, &p.PublisherTypeID, &p.PublisherName,
+			&p.PublisherCode,
+			&p.PublisherTypeID, &p.PublisherTypeName, // ✅ เพิ่มรับ type_name
+			&p.PublisherName,
 			&p.ContactName1, &p.ContactName2,
 			&p.Email, &p.Phone1, &p.Phone2,
 			&p.Address, &p.District, &p.Province, &p.ZipCode,
-			&p.Note, &p.DiscountID, &p.UpdateBy, &p.UpdateDate, &p.IDStatus,
+			&p.Note,
+			&p.DiscountID, &p.DiscountName, // ✅ รับ discount_name
+			&p.UpdateBy, &p.UpdateDate, &p.IDStatus,
 		); err != nil {
 			log.Println(err)
 			return c.Status(500).JSON(models.ApiResponse{
