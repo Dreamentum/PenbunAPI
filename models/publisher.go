@@ -3,7 +3,7 @@ package models
 type Publisher struct {
 	PublisherCode     string  `json:"publisher_code"`
 	PublisherTypeID   string  `json:"publisher_type_id"`
-	PublisherTypeName *string `json:"publisher_type_name"` // 👈 New field for JOIN
+	PublisherTypeName *string `json:"publisher_type_name"`
 	PublisherName     string  `json:"publisher_name"`
 	ContactName1      *string `json:"contact_name1"`
 	ContactName2      *string `json:"contact_name2"`
@@ -16,6 +16,7 @@ type Publisher struct {
 	ZipCode           *string `json:"zip_code"`
 	Note              *string `json:"note"`
 	DiscountID        *string `json:"discount_id"`
+	DiscountName      *string `json:"discount_name"` // ✅ 👈 New field for JOIN
 	UpdateBy          *string `json:"update_by"`
 	UpdateDate        *string `json:"update_date"`
 	IDStatus          bool    `json:"id_status"`
