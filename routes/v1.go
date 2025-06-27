@@ -116,13 +116,13 @@ func RegisterV1Routes(app *fiber.App, db *sql.DB) {
 
 	// Group สำหรับ Vendor Type API [ver 1.7.1]
 	vendorType := protected.Group("/vendortype")
-	vendorType.Post("/insert", controllers.InsertVendor)                 // เพิ่ม Vendor Type
-	vendorType.Get("/select/all", controllers.SelectAllVendor)           // ดึงข้อมูล Vendor Type ทั้งหมด
-	vendorType.Get("/select/page", controllers.SelectPageVendor)         // ดึงข้อมูล Vendor Type แบบ Paging
-	vendorType.Get("/select/:id", controllers.SelectVendorByID)          // ดึงข้อมูล Vendor Type ตาม ID
-	vendorType.Get("/select/name/:name", controllers.SelectVendorByName) // ดึงข้อมูล Vendor Type ตาม Name
-	vendorType.Put("/update/:id", controllers.UpdateVendorByID)          // อัปเดต Vendor Type ตาม ID
-	vendorType.Put("/delete/:id", controllers.DeleteVendorByID)          // เปลี่ยน is_delete = 1
-	vendorType.Delete("/remove/:id", controllers.RemoveVendorByID)       // ลบข้อมูลจริง
+	vendorType.Post("/insert", controllers.InsertVendorType)                 // เพิ่ม Vendor Type
+	vendorType.Get("/select/all", controllers.SelectAllVendorType)           // ดึงข้อมูล Vendor Type ทั้งหมด
+	vendorType.Get("/select/page", controllers.SelectPageVendorType)         // ดึงข้อมูล Vendor Type แบบ Paging
+	vendorType.Get("/select/:id", controllers.SelectVendorTypeByID)          // ดึงข้อมูล Vendor Type ตาม ID
+	vendorType.Get("/select/name/:name", controllers.SelectVendorTypeByName) // ดึงข้อมูล Vendor Type ตาม Name
+	vendorType.Put("/update/:id", controllers.UpdateVendorTypeByID)          // อัปเดต Vendor Type ตาม ID
+	vendorType.Put("/delete/:id", controllers.DeleteVendorTypeByID)          // เปลี่ยน is_delete = 1
+	vendorType.Delete("/remove/:id", controllers.RemoveVendorTypeByID)       // ลบข้อมูลจริง
 
 }
