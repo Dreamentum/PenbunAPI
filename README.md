@@ -12,6 +12,7 @@ PenbunAPI is a RESTful API designed to manage the distribution and supply of boo
 - **Customer Type Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Customer Type
 - **Book Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Customer
 - **Book Type Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Customer Type
+- **Vendor Type Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Vendor Type
 - **Paging**: รองรับการดึงข้อมูลแบบแบ่งหน้า (Pagination)
 - **Logging**: จัดการบันทึกข้อมูล Log สำหรับ Audit
 - **Versioned**: API (v1, v2)
@@ -68,14 +69,19 @@ PenbunAPI is a RESTful API designed to manage the distribution and supply of boo
 - ** ปรับรูปแบบ Response ให้เป็น `models.ApiResponse` แบบมี key ทุกจุด
 - ** เพิ่ม Book API (`tb_book`) พร้อม 8 ฟังก์ชัน
 - ** รองรับ LIKE Search ใน `Publisher`, `Book`, `Customer`, `Type` ทุกประเภท
+- ** Every Insert/Update/Delete uses centralized `executeTransaction()` from `utils/transaction.go`
+- ** All responses wrapped with `models.ApiResponse`
+- ** `Publisher` API now returns `publisher_type_name` via JOIN for better usability
+- ** Updated all models to use `*string` for nullable fields
+- ** Bug fixes and code cleanups for consistency
+- ** JOIN type_name in Publisher for display name better than type id 
 
-## 📦 **New in v1.6.2**
-- ✅ Every Insert/Update/Delete uses centralized `executeTransaction()` from `utils/transaction.go`
-- ✅ All responses wrapped with `models.ApiResponse`
-- ✅ `Publisher` API now returns `publisher_type_name` via JOIN for better usability
-- ✅ Updated all models to use `*string` for nullable fields
-- ✅ Bug fixes and code cleanups for consistency
-- ✅ JOIN type_name in Publisher for display name better than type id 
+## 📦 **New in v1.7.2**
+
+- ✅ เพิ่ม **Vendor Type API** พร้อมฟังก์ชัน 8 แบบ (Select All, Page, By ID, By Name, Insert, Update, Delete, Remove)
+- ✅ ทุกฟังก์ชันของ Vendor Type ใช้ `executeTransaction()` และ `models.ApiResponse`
+- ✅ ปรับปรุงการ Query Paging ให้รองรับ SQL Server (OFFSET + FETCH NEXT)
+- ✅ ปรับปรุง Naming Function, Error Handling, และโครงสร้าง Response ให้สอดคล้องกับมาตรฐานล่าสุด
 
 ---
 
@@ -100,7 +106,9 @@ PenbunAPI/
 │   ├── customerType.go   # Customer Type management endpoints
 │   ├── book.go           # Book management endpoints
 │   ├── bookType.go       # Book Type management endpoints
-│   └── discountType.go   # Discount Type management endpoints
+│   ├── discountType.go   # Discount Type management endpoints
+│   ├── discount.go       # Discount management endpoints
+│   └── vendorType.go     # Discount Type management endpoints
 │
 ├── models/
 │   ├── user.go           # User-related structs and logic
@@ -111,7 +119,9 @@ PenbunAPI/
 │   ├── references.go     # Reference-related structs and logic
 │   ├── book.go           # Book management structs and logic
 │   ├── bookType.go       # Book Type management structs and logic
-│   └── discountType.go   # Discount Type management structs and logic
+│   ├── discountType.go   # Discount Type  management structs and logic
+│   ├── discount.go       # Discount management structs and logic
+│   └── vendorType.go     # Vendor Type management structs and logic
 │
 ├── routes/
 │   ├── public.go         # Public API version routes
