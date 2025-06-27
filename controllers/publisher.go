@@ -19,12 +19,12 @@ func SelectAllPublisher(c *fiber.Ctx) error {
 			p.email, p.phone1, p.phone2, 
 			p.address, p.district, p.province, p.zip_code, 
 			p.note, 
-			p.discount_id, d.discount_name, -- ✅ JOIN จาก tb_discount
+			p.discount_id, d.discount_name,
 			p.update_by, p.update_date, 
 			p.id_status
 		FROM tb_publisher p
 		LEFT JOIN tb_publisher_type pt ON p.publisher_type_id = pt.publisher_type_id
-		LEFT JOIN tb_discount d ON p.discount_id = d.discount_id -- ✅ เพิ่มบรรทัดนี้
+		LEFT JOIN tb_discount d ON p.discount_id = d.discount_id 
 		WHERE p.is_delete = 0
 	`
 	rows, err := config.DB.Query(query)
@@ -49,8 +49,7 @@ func SelectAllPublisher(c *fiber.Ctx) error {
 			&p.Address, &p.District, &p.Province, &p.ZipCode,
 			&p.Note,
 			&p.DiscountID, &p.DiscountName,
-			&p.UpdateBy, &p.UpdateDate,
-			&p.IDStatus,
+			&p.UpdateBy, &p.UpdateDate,&p.IDStatus,
 		); err != nil {
 			log.Println(err)
 			return c.Status(500).JSON(models.ApiResponse{
