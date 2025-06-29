@@ -10,10 +10,12 @@ import (
 	"time"
 
 	"PenbunAPI/config"
+	"PenbunAPI/middleware"
 	"PenbunAPI/routes"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+
 	"github.com/joho/godotenv"
 )
 
@@ -64,7 +66,7 @@ func main() {
 	// })
 
 	// ใช้ JWTMiddleware ระดับ Global
-	// app.Use(middleware.JWTMiddleware(os.GetEnv("JWT_SECRET")))
+	// app.Use(middleware.JWTMiddleware(os.Getenv("JWT_SECRET")))
 	// log.Println("[DEBUG] JWT is :", token)
 
 	// เพิ่ม Logger Middleware
@@ -73,6 +75,8 @@ func main() {
 		TimeFormat: "2006-01-02 15:04:05",
 		TimeZone:   "Local",
 	}))
+
+	app.Use(middleware.NewLoggerMiddleware())
 
 	// เชื่อมต่อ Database
 	config.ConnectDatabase()

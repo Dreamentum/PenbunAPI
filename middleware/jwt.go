@@ -13,7 +13,6 @@ import (
 func JWTMiddleware(secretKey string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		tokenString := c.Get("Authorization")
-
 		if tokenString == "" {
 			return fiber.NewError(fiber.StatusUnauthorized, "Missing or malformed token")
 		}
@@ -22,27 +21,36 @@ func JWTMiddleware(secretKey string) fiber.Handler {
 		tokenString = strings.TrimPrefix(tokenString, "Bearer ")
 
 		// ตรวจสอบว่า Token อยู่ใน Blacklist หรือไม่
-		log.Println("[DEBUG] Token being validated:", tokenString)
 		if config.IsBlacklisted(tokenString) {
-			log.Println("[DEBUG] Token is blacklisted:", tokenString)
+			log.Println("[DEBUG] Token is blacklisted")
 			return fiber.NewError(fiber.StatusUnauthorized, "Token is blacklisted")
 		}
-		
+
 		// ตรวจสอบและ parse Token
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			return []byte(secretKey), nil
 		})
-
-		if err != nil {
+		if err != nil || !token.Valid {
+			log.Println("[DEBUG] Invalid token format or signature")
 			return fiber.NewError(fiber.StatusUnauthorized, "Invalid token")
 		}
 
-		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			c.Locals("user", claims)
-			return c.Next()
+		// Extract claims
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok || !token.Valid {
+			log.Println("[DEBUG] Invalid claims structure")
+			return fiber.NewError(fiber.StatusUnauthorized, "Invalid token")
 		}
 
-		return fiber.NewError(fiber.StatusUnauthorized, "Invalid token")
+		// แสดงชื่อผู้ใช้งานแทน token
+		if userName, ok := claims["user_name"]; ok {
+			log.Printf("[DEBUG] Token validated for user: %v", userName)
+		} else {
+			log.Println("[DEBUG] Token valid but missing user_name in claims")
+		}
+
+		// เก็บข้อมูลผู้ใช้งานใน context
+		c.Locals("user", claims)
+		return c.Next()
 	}
 }
-
