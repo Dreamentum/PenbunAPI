@@ -12,12 +12,14 @@ import (
 
 func SelectAllVendor(c *fiber.Ctx) error {
 	query := `
-		SELECT v.vendor_code, v.vendor_type_id, vt.type_name, v.discount_id, v.vendor_name,
+		SELECT v.vendor_code, v.vendor_name, v.vendor_type_id, t.type_name,
+			v.discount_id, d.discount_name,
 			v.contact_name1, v.contact_name2, v.email, v.phone1, v.phone2,
 			v.address, v.district, v.province, v.zip_code, v.note,
 			v.update_by, v.update_date, v.id_status
 		FROM tb_vendor v
-		LEFT JOIN tb_vendor_type vt ON v.vendor_type_id = vt.vendor_type_id
+		LEFT JOIN tb_vendor_type t ON v.vendor_type_id = t.vendor_type_id
+		LEFT JOIN tb_discount d ON v.discount_id = d.discount_id
 		WHERE v.is_delete = 0
 	`
 
@@ -34,7 +36,8 @@ func SelectAllVendor(c *fiber.Ctx) error {
 	for rows.Next() {
 		var v models.Vendor
 		if err := rows.Scan(
-			&v.VendorCode, &v.VendorTypeID, &v.TypeName, &v.DiscountID, &v.VendorName,
+			&v.VendorCode, &v.VendorName, &v.VendorTypeID, &v.TypeName,
+			&v.DiscountID, &v.DiscountName,
 			&v.ContactName1, &v.ContactName2, &v.Email, &v.Phone1, &v.Phone2,
 			&v.Address, &v.District, &v.Province, &v.ZipCode, &v.Note,
 			&v.UpdateBy, &v.UpdateDate, &v.IDStatus); err != nil {
@@ -57,21 +60,20 @@ func SelectPageVendor(c *fiber.Ctx) error {
 	offset := (page - 1) * limit
 
 	query := `
-		SELECT v.vendor_code, v.vendor_type_id, vt.type_name, v.discount_id, v.vendor_name,
+		SELECT v.vendor_code, v.vendor_name, v.vendor_type_id, t.type_name,
+			v.discount_id, d.discount_name,
 			v.contact_name1, v.contact_name2, v.email, v.phone1, v.phone2,
 			v.address, v.district, v.province, v.zip_code, v.note,
 			v.update_by, v.update_date, v.id_status
 		FROM tb_vendor v
-		LEFT JOIN tb_vendor_type vt ON v.vendor_type_id = vt.vendor_type_id
+		LEFT JOIN tb_vendor_type t ON v.vendor_type_id = t.vendor_type_id
+		LEFT JOIN tb_discount d ON v.discount_id = d.discount_id
 		WHERE v.is_delete = 0
 		ORDER BY v.update_date DESC
 		OFFSET @Offset ROWS FETCH NEXT @Limit ROWS ONLY
 	`
 
-	rows, err := config.DB.Query(query,
-		sql.Named("Offset", offset),
-		sql.Named("Limit", limit),
-	)
+	rows, err := config.DB.Query(query, sql.Named("Offset", offset), sql.Named("Limit", limit))
 	if err != nil {
 		log.Println(err)
 		return c.Status(500).JSON(models.ApiResponse{
@@ -84,7 +86,8 @@ func SelectPageVendor(c *fiber.Ctx) error {
 	for rows.Next() {
 		var v models.Vendor
 		if err := rows.Scan(
-			&v.VendorCode, &v.VendorTypeID, &v.TypeName, &v.DiscountID, &v.VendorName,
+			&v.VendorCode, &v.VendorName, &v.VendorTypeID, &v.TypeName,
+			&v.DiscountID, &v.DiscountName,
 			&v.ContactName1, &v.ContactName2, &v.Email, &v.Phone1, &v.Phone2,
 			&v.Address, &v.District, &v.Province, &v.ZipCode, &v.Note,
 			&v.UpdateBy, &v.UpdateDate, &v.IDStatus); err != nil {
@@ -118,20 +121,25 @@ func SelectPageVendor(c *fiber.Ctx) error {
 
 func SelectVendorByID(c *fiber.Ctx) error {
 	id := c.Params("id")
+
 	query := `
-		SELECT v.vendor_code, v.vendor_type_id, vt.type_name, v.discount_id, v.vendor_name,
+		SELECT v.vendor_code, v.vendor_name, v.vendor_type_id, t.type_name,
+			v.discount_id, d.discount_name,
 			v.contact_name1, v.contact_name2, v.email, v.phone1, v.phone2,
 			v.address, v.district, v.province, v.zip_code, v.note,
 			v.update_by, v.update_date, v.id_status
 		FROM tb_vendor v
-		LEFT JOIN tb_vendor_type vt ON v.vendor_type_id = vt.vendor_type_id
+		LEFT JOIN tb_vendor_type t ON v.vendor_type_id = t.vendor_type_id
+		LEFT JOIN tb_discount d ON v.discount_id = d.discount_id
 		WHERE v.vendor_code = @ID AND v.is_delete = 0
 	`
+
 	row := config.DB.QueryRow(query, sql.Named("ID", id))
 
 	var v models.Vendor
 	if err := row.Scan(
-		&v.VendorCode, &v.VendorTypeID, &v.TypeName, &v.DiscountID, &v.VendorName,
+		&v.VendorCode, &v.VendorName, &v.VendorTypeID, &v.TypeName,
+		&v.DiscountID, &v.DiscountName,
 		&v.ContactName1, &v.ContactName2, &v.Email, &v.Phone1, &v.Phone2,
 		&v.Address, &v.District, &v.Province, &v.ZipCode, &v.Note,
 		&v.UpdateBy, &v.UpdateDate, &v.IDStatus); err != nil {

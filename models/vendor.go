@@ -5,6 +5,7 @@ type Vendor struct {
 	VendorTypeID string  `json:"vendor_type_id"`
 	TypeName     string  `json:"type_name"` // 👈 เพิ่มสำหรับ JOIN กับ tb_vendor_type
 	DiscountID   *string `json:"discount_id"`
+	DiscountName string  `json:"discount_name"`
 	VendorName   string  `json:"vendor_name"`
 	ContactName1 *string `json:"contact_name1"`
 	ContactName2 *string `json:"contact_name2"`
