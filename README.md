@@ -1,7 +1,14 @@
 
-# 🅿️ **PenbunAPI v1.6.2**
+# 🅿️ **PenbunAPI v1.7 Aplha**
 
 PenbunAPI is a RESTful API designed to manage the distribution and supply of books and stationery. It provides robust features for inventory management, order processing, and user authentication using JWT.
+
+## 📦 **New in v1.7.3**
+
+- ✅ เพิ่ม **Unit Type API** พร้อมฟังก์ชัน 8 แบบ (Select All, Page, By ID, By Name, Insert, Update, Delete, Remove)
+- ✅ รองรับการค้นหาแบบ LIKE โดยใช้ `select/name/:name`
+- ✅ ทุกฟังก์ชันใช้ `executeTransaction()` และ `models.ApiResponse`
+- ✅ เพิ่ม `unit_type_id`, `unit_type_name`, `description`, `update_by`, `update_date`, `id_status` และ `is_delete` ตามมาตรฐาน Master Table
 
 ## 🚀 **Features**
 
@@ -13,6 +20,7 @@ PenbunAPI is a RESTful API designed to manage the distribution and supply of boo
 - **Book Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Customer
 - **Book Type Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Customer Type
 - **Vendor Type Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Vendor Type
+- **Unit Type Management**: เพิ่มฟังก์ชันครบถ้วนสำหรับจัดการข้อมูล Unit Type
 - **Paging**: รองรับการดึงข้อมูลแบบแบ่งหน้า (Pagination)
 - **Logging**: จัดการบันทึกข้อมูล Log สำหรับ Audit
 - **Versioned**: API (v1, v2)
@@ -36,7 +44,6 @@ PenbunAPI is a RESTful API designed to manage the distribution and supply of boo
 - Every Insert/Update/Delete uses centralized `executeTransaction()` from `utils/transaction.go`
 - All responses wrapped with `models.ApiResponse`
 
-
 ---
 
 > หมายเหตุเพิ่มเติม:
@@ -53,7 +60,7 @@ PenbunAPI is a RESTful API designed to manage the distribution and supply of boo
 ```
 - ฟังก์ชัน Select By NAME ยังไม่มีการ Implement
 
-## ↩️ **Previous Version** (1.6.X)
+## ↩️ **Previous Version** (1.7.2)
 - **Authentication**: Secure login with JWT-based authentication.
 - **Inventory Management**: CRUD operations for books, book types, and references.
 - **Order and Delivery**: Manage orders and deliveries.
@@ -75,13 +82,10 @@ PenbunAPI is a RESTful API designed to manage the distribution and supply of boo
 - ** Updated all models to use `*string` for nullable fields
 - ** Bug fixes and code cleanups for consistency
 - ** JOIN type_name in Publisher for display name better than type id 
-
-## 📦 **New in v1.7.2**
-
-- ✅ เพิ่ม **Vendor Type API** พร้อมฟังก์ชัน 8 แบบ (Select All, Page, By ID, By Name, Insert, Update, Delete, Remove)
-- ✅ ทุกฟังก์ชันของ Vendor Type ใช้ `executeTransaction()` และ `models.ApiResponse`
-- ✅ ปรับปรุงการ Query Paging ให้รองรับ SQL Server (OFFSET + FETCH NEXT)
-- ✅ ปรับปรุง Naming Function, Error Handling, และโครงสร้าง Response ให้สอดคล้องกับมาตรฐานล่าสุด
+- ** เพิ่ม **Vendor Type API** พร้อมฟังก์ชัน 8 แบบ (Select All, Page, By ID, By Name, Insert, Update, Delete, Remove)
+- ** ทุกฟังก์ชันของ Vendor Type ใช้ `executeTransaction()` และ `models.ApiResponse`
+- ** ปรับปรุงการ Query Paging ให้รองรับ SQL Server (OFFSET + FETCH NEXT)
+- ** ปรับปรุง Naming Function, Error Handling, และโครงสร้าง Response ให้สอดคล้องกับมาตรฐานล่าสุด
 
 ---
 
@@ -108,7 +112,8 @@ PenbunAPI/
 │   ├── bookType.go       # Book Type management endpoints
 │   ├── discountType.go   # Discount Type management endpoints
 │   ├── discount.go       # Discount management endpoints
-│   └── vendorType.go     # Discount Type management endpoints
+│   ├── vendorType.go     # Vendor Type management endpoints
+│   └── vendor.go         # Vendor management endpoints
 │
 ├── models/
 │   ├── user.go           # User-related structs and logic
@@ -120,8 +125,8 @@ PenbunAPI/
 │   ├── book.go           # Book management structs and logic
 │   ├── bookType.go       # Book Type management structs and logic
 │   ├── discountType.go   # Discount Type  management structs and logic
-│   ├── discount.go       # Discount management structs and logic
-│   └── vendorType.go     # Vendor Type management structs and logic
+│   ├── vendorType.go     # Vendor Type management structs and logic
+│   └── vendor.go         # Vendor management structs and logic
 │
 ├── routes/
 │   ├── public.go         # Public API version routes
@@ -146,7 +151,7 @@ PenbunAPI/
 API Endpoints
 -----------------------
 
-# PenbunAPI v1.6.2
+# PenbunAPI v1.7.3
 
 ## 📘 BookType API
 ### Base Path: `/api/v1/protected/booktype`

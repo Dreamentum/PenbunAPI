@@ -136,4 +136,15 @@ func RegisterV1Routes(app *fiber.App, db *sql.DB) {
 	vendor.Put("/delete/:id", controllers.DeleteVendorByID)          // เปลี่ยน is_delete = 1
 	vendor.Delete("/remove/:id", controllers.RemoveVendorByID)       // ลบข้อมูลจริง
 
+	// Group สำหรับ Unit Type API [ver 1.7.3]
+	unitType := protected.Group("/unittype")
+	unitType.Post("/insert", controllers.InsertUnitType)                 // เพิ่ม Unit Type
+	unitType.Get("/select/all", controllers.SelectAllUnitType)           // ดึงข้อมูลทั้งหมด
+	unitType.Get("/select/page", controllers.SelectPageUnitType)         // ดึงข้อมูลแบบ Paging
+	unitType.Get("/select/:id", controllers.SelectUnitTypeByID)          // ดึงข้อมูลตาม ID
+	unitType.Get("/select/name/:name", controllers.SelectUnitTypeByName) // ดึงข้อมูลตาม Name
+	unitType.Put("/update/:id", controllers.UpdateUnitTypeByID)          // อัปเดตตาม ID
+	unitType.Put("/delete/:id", controllers.DeleteUnitTypeByID)          // Soft Delete
+	unitType.Delete("/remove/:id", controllers.RemoveUnitTypeByID)       // ลบข้อมูลจริง
+
 }
