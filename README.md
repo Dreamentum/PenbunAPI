@@ -3,9 +3,15 @@
 
 PenbunAPI is a RESTful API designed to manage the distribution and supply of books and stationery. It provides robust features for inventory management, order processing, and user authentication using JWT.
 
-## 📦 **New in v1.7.3**
+## 📘 **Development Standards and Tasks**
 
-- ✅ เพิ่ม **Unit Type API** พร้อมฟังก์ชัน 8 แบบ (Select All, Page, By ID, By Name, Insert, Update, Delete, Remove)
+To ensure consistent, maintainable development, PenbunAPI is now governed by:
+
+- [`STANDARD.md`](./STANDARD.md): Defines conventions, query patterns, response formats, transaction management, naming, validation rules, and controller templates.
+- [`TODO.md`](./TODO.md): Task tracker that manages priorities and work items in checklist format.
+
+## 📦 **New in v1.7.5**
+- ✅ เพิ่ม **Product Type API** พร้อมฟังก์ชัน 8 แบบ (Select All, Page, By ID, By Name, Insert, Update, Delete, Remove)
 - ✅ รองรับการค้นหาแบบ LIKE โดยใช้ `select/name/:name`
 - ✅ ทุกฟังก์ชันใช้ `executeTransaction()` และ `models.ApiResponse`
 - ✅ เพิ่ม `unit_type_id`, `unit_type_name`, `description`, `update_by`, `update_date`, `id_status` และ `is_delete` ตามมาตรฐาน Master Table
@@ -112,6 +118,8 @@ PenbunAPI/
 │   ├── bookType.go       # Book Type management endpoints
 │   ├── discountType.go   # Discount Type management endpoints
 │   ├── discount.go       # Discount management endpoints
+│   ├── unitType.go      # Product Type management endpoints
+│   ├── productType.go    # Product Type management endpoints
 │   ├── vendorType.go     # Vendor Type management endpoints
 │   └── vendor.go         # Vendor management endpoints
 │
@@ -124,7 +132,10 @@ PenbunAPI/
 │   ├── references.go     # Reference-related structs and logic
 │   ├── book.go           # Book management structs and logic
 │   ├── bookType.go       # Book Type management structs and logic
-│   ├── discountType.go   # Discount Type  management structs and logic
+│   ├── discountType.go   # Discount Type management structs and logic
+│   ├── discount.go       # Discount management structs and logic
+│   ├── unitType.go       # Product Type management endpoints
+│   ├── productType.go    # Product Type management endpoints
 │   ├── vendorType.go     # Vendor Type management structs and logic
 │   └── vendor.go         # Vendor management structs and logic
 │
