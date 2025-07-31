@@ -158,6 +158,7 @@ func RegisterV1Routes(app *fiber.App, db *sql.DB) {
 	productType.Put("/delete/:id", controllers.DeleteProductTypeByID)          // Soft Delete Product Type
 	productType.Delete("/remove/:id", controllers.RemoveProductTypeByID)       // ลบข้อมูล Product Type จริง
 
+	// Group สำหรับ Product Type Group API [ver 1.7.9]
 	productTypeGroup := protected.Group("/producttypegroup")
 	productTypeGroup.Post("/insert", controllers.InsertProductTypeGroup)
 	productTypeGroup.Get("/select/all", controllers.SelectAllProductTypeGroup)
