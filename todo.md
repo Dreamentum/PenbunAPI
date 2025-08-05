@@ -19,7 +19,7 @@
 - [x] เพิ่ม Discount API (8 ฟังก์ชัน)
 - [x] เพิ่ม Unit Type API (8 ฟังก์ชัน)
 - [x] เพิ่ม Product Type API (8 ฟังก์ชัน)
-- [ ] เพิ่ม Product Format Type API (8 ฟังก์ชัน)
+- [x] เพิ่ม Product Format Type API (8 ฟังก์ชัน)
 - [ ] เพิ่ม Product API (8 ฟังก์ชัน)
 
 ---
