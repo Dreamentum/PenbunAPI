@@ -5,12 +5,9 @@ import (
 	"PenbunAPI/models"
 	"PenbunAPI/utils"
 	"database/sql"
-	"fmt"
 	"log"
-	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v5"
 )
 
 // 🔹 Select All
@@ -191,68 +188,21 @@ func UpdateProductTypeGroupByID(c *fiber.Ctx) error {
 }
 
 // 🔹 Soft Delete
-// 🔹 Soft Delete
 func DeleteProductTypeGroupByID(c *fiber.Ctx) error {
 	id := c.Params("id")
+	username := c.Query("user") // 👈 รับค่าจาก query param ?user=ROOT
 
-	// ✅ ดึงชื่อผู้ใช้งานจาก JWT (มี fallback ป้องกันค่าว่าง)
-	updateBy := fmt.Sprintf("%v", c.Locals("user"))
-	if strings.TrimSpace(updateBy) == "" {
-		updateBy = "SYSTEM"
+	if username == "" {
+		username = "UNKNOWN"
 	}
 
 	query := `
-		UPDATE tb_product_type_group
+		UPDATE tb_product_type
 		SET is_delete = 1,
-			update_by = @UpdateBy,
-			update_date = CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'SE Asia Standard Time' AS DATETIME)
-		WHERE group_code = @ID
-	`
-
-	// ✅ Execute Transaction
-	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
-		func(tx *sql.Tx) error {
-			_, err := tx.Exec(query,
-				sql.Named("ID", id),
-				sql.Named("UpdateBy", updateBy),
-			)
-			return err
-		},
-	})
-
-	if err != nil {
-		log.Println("[ERROR] DeleteProductTypeGroupByID:", err)
-		return c.Status(500).JSON(models.ApiResponse{
-			Status:  "error",
-			Message: "Soft delete failed",
-			Data:    nil,
-		})
-	}
-
-	return c.JSON(models.ApiResponse{
-		Status:  "success",
-		Message: "Group soft deleted",
-	})
-}
-
-func DeleteProductTypeGroupByID1(c *fiber.Ctx) error {
-	id := c.Params("id")
-
-	claims, ok := c.Locals("user").(jwt.MapClaims)
-	username := ""
-	if ok {
-		if val, found := claims["username"]; found {
-			username = fmt.Sprintf("%v", val)
-		}
-	}
-
-	query := `
-		UPDATE tb_product_type_group
-		SET is_delete = 1, update_by = @UpdateBy,
+		    update_by = @UpdateBy,
 		    update_date = CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'SE Asia Standard Time' AS DATETIME)
-		WHERE group_code = @ID
+		WHERE product_type_id = @ID
 	`
-
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
 			_, err := tx.Exec(query,
@@ -260,20 +210,19 @@ func DeleteProductTypeGroupByID1(c *fiber.Ctx) error {
 				sql.Named("UpdateBy", username),
 			)
 			return err
-		}})
-
+		},
+	})
 	if err != nil {
-		log.Println(err)
+		log.Printf("[ERROR] DeleteProductTypeByID: %v\n", err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
-			Message: "Soft delete failed",
-			Data:    nil,
+			Message: "Failed to soft delete product type",
 		})
 	}
 
 	return c.JSON(models.ApiResponse{
 		Status:  "success",
-		Message: "Group soft deleted",
+		Message: "Product type deleted (soft)",
 	})
 }
 

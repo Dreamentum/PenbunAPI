@@ -5,9 +5,9 @@ import (
 	"PenbunAPI/models"
 
 	"database/sql"
+	"log"
 	"strings"
 	"time"
-	"log"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
@@ -51,10 +51,10 @@ func Register(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"message": "User registered successfully"})
 }
 
-/* 
+/*
 ฟังก์ชัน RefreshToken ใช้สำหรับออก JWT Token ใหม่
-เมื่อ Token ปัจจุบันใกล้หมดอายุ โดยยังรักษาข้อมูลผู้ใช้งานเดิมไว้ 
-วิธีการทำงานคือ ตรวจสอบ Token ปัจจุบันก่อน 
+เมื่อ Token ปัจจุบันใกล้หมดอายุ โดยยังรักษาข้อมูลผู้ใช้งานเดิมไว้
+วิธีการทำงานคือ ตรวจสอบ Token ปัจจุบันก่อน
 จากนั้นสร้าง Token ใหม่ที่มีวันหมดอายุยาวขึ้น.
 */
 func RefreshToken(c *fiber.Ctx) error {
@@ -74,7 +74,7 @@ func RefreshToken(c *fiber.Ctx) error {
 		log.Println("[DEBUG] Token is blacklisted:", tokenString)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Token is blacklisted"})
 	}
-	
+
 	// ตรวจสอบความถูกต้องของ Token
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return []byte(config.GetEnv("JWT_SECRET")), nil
