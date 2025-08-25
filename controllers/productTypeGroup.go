@@ -190,21 +190,37 @@ func UpdateProductTypeGroupByID(c *fiber.Ctx) error {
 // 🔹 Soft Delete
 func DeleteProductTypeGroupByID(c *fiber.Ctx) error {
 	id := c.Params("id")
+	updateBy := c.Locals("user").(string) // 🔹 ดึงชื่อผู้ใช้งานจาก JWT
+
 	query := `
 		UPDATE tb_product_type_group
-		SET is_delete = 1, update_date = CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'SE Asia Standard Time' AS DATETIME)
+		SET is_delete = 1,
+			update_by = @UpdateBy,
+			update_date = CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'SE Asia Standard Time' AS DATETIME)
 		WHERE group_code = @ID
 	`
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
-			_, err := tx.Exec(query, sql.Named("ID", id))
+			_, err := tx.Exec(query,
+				sql.Named("ID", id),
+				sql.Named("UpdateBy", updateBy),
+			)
 			return err
-		}})
+		},
+	})
 	if err != nil {
 		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Soft delete failed", Data: nil})
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Soft delete failed",
+			Data:    nil,
+		})
 	}
-	return c.JSON(models.ApiResponse{Status: "success", Message: "Group soft deleted"})
+
+	return c.JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "Group soft deleted",
+	})
 }
 
 // 🔹 Hard Delete
