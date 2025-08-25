@@ -193,25 +193,30 @@ func UpdateProductTypeGroupByID(c *fiber.Ctx) error {
 func DeleteProductTypeGroupByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	claims := c.Locals("user").(jwt.MapClaims)
-	updateBy := fmt.Sprintf("%v", claims["username"])
+	claims, ok := c.Locals("user").(jwt.MapClaims)
+	username := ""
+	if ok {
+		if val, found := claims["username"]; found {
+			username = fmt.Sprintf("%v", val)
+		}
+	}
 
 	query := `
 		UPDATE tb_product_type_group
-		SET is_delete = 1,
-			update_by = @UpdateBy,
-			update_date = CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'SE Asia Standard Time' AS DATETIME)
+		SET is_delete = 1, update_by = @UpdateBy,
+		    update_date = CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'SE Asia Standard Time' AS DATETIME)
 		WHERE group_code = @ID
 	`
+
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
 			_, err := tx.Exec(query,
 				sql.Named("ID", id),
-				sql.Named("UpdateBy", updateBy),
+				sql.Named("UpdateBy", username),
 			)
 			return err
-		},
-	})
+		}})
+
 	if err != nil {
 		log.Println(err)
 		return c.Status(500).JSON(models.ApiResponse{
