@@ -5,9 +5,11 @@ import (
 	"PenbunAPI/models"
 	"PenbunAPI/utils"
 	"database/sql"
+	"fmt"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // 🔹 Select All
@@ -190,7 +192,9 @@ func UpdateProductTypeGroupByID(c *fiber.Ctx) error {
 // 🔹 Soft Delete
 func DeleteProductTypeGroupByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	updateBy := c.Locals("user").(string) // 🔹 ดึงชื่อผู้ใช้งานจาก JWT
+
+	claims := c.Locals("user").(jwt.MapClaims)
+	updateBy := fmt.Sprintf("%v", claims["username"])
 
 	query := `
 		UPDATE tb_product_type_group
