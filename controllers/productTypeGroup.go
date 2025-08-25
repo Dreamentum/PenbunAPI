@@ -198,9 +198,7 @@ func DeleteProductTypeGroupByID(c *fiber.Ctx) error {
 
 	query := `
 		UPDATE tb_product_type_group
-		SET is_delete = 1,
-		    update_by = @UpdateBy,
-		    update_date = CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'SE Asia Standard Time' AS DATETIME)
+		SET is_delete = 1, update_by = @UpdateBy
 		WHERE group_code = @ID
 	`
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
