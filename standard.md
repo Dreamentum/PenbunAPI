@@ -184,11 +184,7 @@ func Delete<Entity>ByID(c *fiber.Ctx) error {
         username = "UNKNOWN"
     }
 
-    query := `
-        UPDATE tb_<entity> SET is_delete = 1, update_by = @UpdateBy, 
-            update_date = CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'SE Asia Standard Time' AS DATETIME) 
-            WHERE <entity>_id = @ID
-    `
+    query := `UPDATE tb_<entity> SET is_delete = 1, update_by = @UpdateBy WHERE <entity>_id = @ID`
 ```
 
 ### 🔷 8. Remove By ID (Hard Delete)
@@ -205,4 +201,4 @@ func Remove<Entity>ByID(c *fiber.Ctx) error {
 
 🛠️ เปลี่ยน `<Entity>` เป็นชื่อ struct และ `<entity>` เป็นชื่อ table เช่น `VendorType`, `vendor_type`
 
-> 🔖 เวอร์ชันล่าสุดของมาตรฐานนี้: v1.8.3
+> 🔖 เวอร์ชันล่าสุดของมาตรฐานนี้: v1.9

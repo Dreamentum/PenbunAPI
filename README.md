@@ -335,8 +335,8 @@ API Endpoints
    ```sql
    DELETE FROM tb_users;
    DBCC CHECKIDENT ('tb_users', RESEED, 0);
-   INSERT INTO tb_users (user_name, user_password)
-   VALUES ('username', '$2y$10$KfQ8mU5VvJ5QGk7/LN9OeOujOPEwLjD3Oo4yEWDwEpr6/LkfuPWoK');
+   INSERT INTO tb_users (user_name, user_password, user_level)
+   VALUES ('username', '$2y$10$KfQ8mU5VvJ5QGk7/LN9OeOujOPEwLjD3Oo4yEWDwEpr6/LkfuPWoK', 'ADMIN');
    ```
 
 ## ©️ **License**

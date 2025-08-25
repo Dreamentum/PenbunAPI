@@ -20,7 +20,10 @@ func SelectAllProductTypeGroup(c *fiber.Ctx) error {
 	rows, err := config.DB.Query(query)
 	if err != nil {
 		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to fetch product type groups", Data: nil})
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to fetch product type groups",
+			Data:    nil})
 	}
 	defer rows.Close()
 
@@ -29,11 +32,16 @@ func SelectAllProductTypeGroup(c *fiber.Ctx) error {
 		var g models.ProductTypeGroup
 		if err := rows.Scan(&g.GroupCode, &g.GroupName, &g.Description, &g.UpdateBy, &g.UpdateDate, &g.IDStatus, &g.IsDelete); err != nil {
 			log.Println(err)
-			return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to read data", Data: nil})
+			return c.Status(500).JSON(models.ApiResponse{
+				Status:  "error",
+				Message: "Failed to read data",
+				Data:    nil})
 		}
 		result = append(result, g)
 	}
-	return c.JSON(models.ApiResponse{Status: "success", Data: result})
+	return c.JSON(models.ApiResponse{
+		Status: "success",
+		Data:   result})
 }
 
 // 🔹 Select Paging
@@ -52,7 +60,10 @@ func SelectPageProductTypeGroup(c *fiber.Ctx) error {
 	rows, err := config.DB.Query(query, sql.Named("Offset", offset), sql.Named("Limit", limit))
 	if err != nil {
 		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to fetch paged data", Data: nil})
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to fetch paged data",
+			Data:    nil})
 	}
 	defer rows.Close()
 
@@ -61,7 +72,10 @@ func SelectPageProductTypeGroup(c *fiber.Ctx) error {
 		var g models.ProductTypeGroup
 		if err := rows.Scan(&g.GroupCode, &g.GroupName, &g.Description, &g.UpdateBy, &g.UpdateDate, &g.IDStatus, &g.IsDelete); err != nil {
 			log.Println(err)
-			return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to read data", Data: nil})
+			return c.Status(500).JSON(models.ApiResponse{
+				Status:  "error",
+				Message: "Failed to read data",
+				Data:    nil})
 		}
 		result = append(result, g)
 	}
@@ -70,10 +84,19 @@ func SelectPageProductTypeGroup(c *fiber.Ctx) error {
 	err = config.DB.QueryRow(`SELECT COUNT(*) FROM tb_product_type_group WHERE is_delete = 0`).Scan(&total)
 	if err != nil {
 		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to count data", Data: nil})
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to count data",
+			Data:    nil})
 	}
 
-	return c.JSON(models.ApiResponse{Status: "success", Data: fiber.Map{"page": page, "limit": limit, "total": total, "groups": result}})
+	return c.JSON(models.ApiResponse{
+		Status: "success",
+		Data: fiber.Map{
+			"page":   page,
+			"limit":  limit,
+			"total":  total,
+			"groups": result}})
 }
 
 // 🔹 Select By ID
@@ -89,12 +112,20 @@ func SelectProductTypeGroupByID(c *fiber.Ctx) error {
 	var g models.ProductTypeGroup
 	if err := row.Scan(&g.GroupCode, &g.GroupName, &g.Description, &g.UpdateBy, &g.UpdateDate, &g.IDStatus, &g.IsDelete); err != nil {
 		if err == sql.ErrNoRows {
-			return c.Status(404).JSON(models.ApiResponse{Status: "error", Message: "Group not found", Data: nil})
+			return c.Status(404).JSON(models.ApiResponse{
+				Status:  "error",
+				Message: "Group not found",
+				Data:    nil})
 		}
 		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to read data", Data: nil})
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to read data",
+			Data:    nil})
 	}
-	return c.JSON(models.ApiResponse{Status: "success", Data: g})
+	return c.JSON(models.ApiResponse{
+		Status: "success",
+		Data:   g})
 }
 
 // 🔹 Select By Name
@@ -108,7 +139,10 @@ func SelectProductTypeGroupByName(c *fiber.Ctx) error {
 	rows, err := config.DB.Query(query, sql.Named("Name", name))
 	if err != nil {
 		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to search group", Data: nil})
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to search group",
+			Data:    nil})
 	}
 	defer rows.Close()
 
@@ -117,22 +151,33 @@ func SelectProductTypeGroupByName(c *fiber.Ctx) error {
 		var g models.ProductTypeGroup
 		if err := rows.Scan(&g.GroupCode, &g.GroupName, &g.Description, &g.UpdateBy, &g.UpdateDate, &g.IDStatus, &g.IsDelete); err != nil {
 			log.Println(err)
-			return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to read data", Data: nil})
+			return c.Status(500).JSON(models.ApiResponse{
+				Status:  "error",
+				Message: "Failed to read data",
+				Data:    nil})
 		}
 		result = append(result, g)
 	}
 
 	if len(result) == 0 {
-		return c.Status(404).JSON(models.ApiResponse{Status: "error", Message: "No matching group found", Data: nil})
+		return c.Status(404).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "No matching group found",
+			Data:    nil})
 	}
-	return c.JSON(models.ApiResponse{Status: "success", Data: result})
+	return c.JSON(models.ApiResponse{
+		Status: "success",
+		Data:   result})
 }
 
 // 🔹 Insert
 func InsertProductTypeGroup(c *fiber.Ctx) error {
 	var g models.ProductTypeGroup
 	if err := c.BodyParser(&g); err != nil {
-		return c.Status(400).JSON(models.ApiResponse{Status: "error", Message: "Invalid body", Data: nil})
+		return c.Status(400).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Invalid body",
+			Data:    nil})
 	}
 
 	query := `
@@ -151,9 +196,15 @@ func InsertProductTypeGroup(c *fiber.Ctx) error {
 	})
 	if err != nil {
 		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Insert failed", Data: nil})
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Insert failed",
+			Data:    nil})
 	}
-	return c.Status(201).JSON(models.ApiResponse{Status: "success", Message: "Group inserted", Data: nil})
+	return c.Status(201).JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "Group inserted",
+		Data:    nil})
 }
 
 // 🔹 Update
@@ -161,7 +212,10 @@ func UpdateProductTypeGroupByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 	var g models.ProductTypeGroup
 	if err := c.BodyParser(&g); err != nil {
-		return c.Status(400).JSON(models.ApiResponse{Status: "error", Message: "Invalid body", Data: nil})
+		return c.Status(400).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Invalid body",
+			Data:    nil})
 	}
 
 	query := `
@@ -182,20 +236,23 @@ func UpdateProductTypeGroupByID(c *fiber.Ctx) error {
 		}})
 	if err != nil {
 		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Update failed", Data: nil})
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Update failed", Data: nil})
 	}
-	return c.JSON(models.ApiResponse{Status: "success", Message: "Group updated"})
+	return c.JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "Product Type Group updated"})
 }
 
 // 🔹 Soft Delete
 func DeleteProductTypeGroupByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	username := c.Query("user") // 👈 รับค่าจาก query param ?user=ROOT
+	username := c.Query("user") // 👈 รับค่าจาก query param ?user=ROOT or ADMIN
 
 	if username == "" {
 		username = "UNKNOWN"
 	}
-
 	query := `
 		UPDATE tb_product_type_group
 		SET is_delete = 1, update_by = @UpdateBy
@@ -211,7 +268,7 @@ func DeleteProductTypeGroupByID(c *fiber.Ctx) error {
 		},
 	})
 	if err != nil {
-		log.Printf("[ERROR] DeleteProductTypeByID: %v\n", err)
+		log.Printf("[ERROR] DeleteProductTypeGroupByID: %v\n", err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
 			Message: "Failed to soft delete product type",
@@ -220,7 +277,7 @@ func DeleteProductTypeGroupByID(c *fiber.Ctx) error {
 
 	return c.JSON(models.ApiResponse{
 		Status:  "success",
-		Message: "Product type deleted (soft)",
+		Message: "Product type group deleted (soft)",
 	})
 }
 
@@ -235,7 +292,11 @@ func RemoveProductTypeGroupByID(c *fiber.Ctx) error {
 		}})
 	if err != nil {
 		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Hard delete failed", Data: nil})
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Hard delete failed", Data: nil})
 	}
-	return c.JSON(models.ApiResponse{Status: "success", Message: "Group hard deleted"})
+	return c.JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "Group hard deleted"})
 }
