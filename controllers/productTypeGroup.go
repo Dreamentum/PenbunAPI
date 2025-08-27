@@ -12,27 +12,36 @@ import (
 
 // 🔹 Select All (Business Response + แปลงเวลาเป็น string)
 func SelectAllProductTypeGroup(c *fiber.Ctx) error {
+	status := c.Query("status", "") // e.g. ACTIVE
+	q := c.Query("q", "")           // keyword in group_name
+
 	query := `
+		SET NOCOUNT ON;
+
 		SELECT
 			group_code,
 			group_name,
 			description,
 			update_by,
-			CONVERT(varchar(19), update_date, 120) AS update_date, -- "YYYY-MM-DD HH:MM:SS"
+			CONVERT(varchar(19), update_date, 120) AS update_date,
 			id_status,
 			is_delete
 		FROM tb_product_type_group
 		WHERE is_delete = 0
+		  AND (COALESCE(NULLIF(@Status,''), id_status) = id_status)   -- ถ้าไม่ส่ง status จะไม่กรอง
+		  AND (group_name LIKE '%' + @Q + '%' OR @Q = '')             -- ถ้าไม่ส่ง q จะไม่กรอง
 		ORDER BY group_name ASC;
 	`
 
-	rows, err := config.DB.Query(query)
+	rows, err := config.DB.Query(
+		query,
+		sql.Named("Status", status),
+		sql.Named("Q", q),
+	)
 	if err != nil {
-		log.Println("[PTG][select/all] query error:", err)
+		log.Println("[PTG][select/all][filter] query error:", err)
 		return c.Status(500).JSON(models.ApiResponse{
-			Status:  "error",
-			Message: "Failed to fetch product type groups",
-			Data:    nil,
+			Status: "error", Message: "Failed to fetch product type groups", Data: nil,
 		})
 	}
 	defer rows.Close()
@@ -41,38 +50,23 @@ func SelectAllProductTypeGroup(c *fiber.Ctx) error {
 	for rows.Next() {
 		var g models.ProductTypeGroup
 		if err := rows.Scan(
-			&g.GroupCode,
-			&g.GroupName,
-			&g.Description, // *string
-			&g.UpdateBy,    // *string
-			&g.UpdateDate,  // *string ← safe เพราะเรา CONVERT มาแล้ว
-			&g.IDStatus,    // string
-			&g.IsDelete,    // bool
+			&g.GroupCode, &g.GroupName, &g.Description, &g.UpdateBy, &g.UpdateDate, &g.IDStatus, &g.IsDelete,
 		); err != nil {
-			log.Println("[PTG][select/all] scan error:", err)
+			log.Println("[PTG][select/all][filter] scan error:", err)
 			return c.Status(500).JSON(models.ApiResponse{
-				Status:  "error",
-				Message: "Failed to read data",
-				Data:    nil,
+				Status: "error", Message: "Failed to read data", Data: nil,
 			})
 		}
-		result = append(result, g) // ✅ อย่าลืม append
+		result = append(result, g)
 	}
-
 	if err := rows.Err(); err != nil {
-		log.Println("[PTG][select/all] rows err:", err)
+		log.Println("[PTG][select/all][filter] rows err:", err)
 		return c.Status(500).JSON(models.ApiResponse{
-			Status:  "error",
-			Message: "Read rows failed",
-			Data:    nil,
+			Status: "error", Message: "Read rows failed", Data: nil,
 		})
 	}
 
-	return c.JSON(models.ApiResponse{
-		Status:  "success",
-		Message: "OK",
-		Data:    result,
-	})
+	return c.JSON(models.ApiResponse{Status: "success", Message: "OK", Data: result})
 }
 
 // 🔹 Select Paging
