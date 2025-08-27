@@ -10,8 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// 🔹 Select All
-// 🔹 Select All
+// 🔹 Select All (Business Response + แปลงเวลาเป็น string)
 func SelectAllProductTypeGroup(c *fiber.Ctx) error {
 	query := `
 		SELECT
@@ -19,7 +18,7 @@ func SelectAllProductTypeGroup(c *fiber.Ctx) error {
 			group_name,
 			description,
 			update_by,
-			update_date,
+			CONVERT(varchar(19), update_date, 120) AS update_date, -- "YYYY-MM-DD HH:MM:SS"
 			id_status,
 			is_delete
 		FROM tb_product_type_group
@@ -38,16 +37,15 @@ func SelectAllProductTypeGroup(c *fiber.Ctx) error {
 	}
 	defer rows.Close()
 
-	result := make([]models.ProductTypeGroup, 0, 32)
-
+	result := make([]models.ProductTypeGroup, 0, 64)
 	for rows.Next() {
 		var g models.ProductTypeGroup
 		if err := rows.Scan(
 			&g.GroupCode,
 			&g.GroupName,
-			&g.Description, // *string (nullable ok)
-			&g.UpdateBy,    // *string (nullable ok)
-			&g.UpdateDate,  // *string (nullable ok via driver)
+			&g.Description, // *string
+			&g.UpdateBy,    // *string
+			&g.UpdateDate,  // *string ← safe เพราะเรา CONVERT มาแล้ว
 			&g.IDStatus,    // string
 			&g.IsDelete,    // bool
 		); err != nil {
@@ -58,9 +56,9 @@ func SelectAllProductTypeGroup(c *fiber.Ctx) error {
 				Data:    nil,
 			})
 		}
+		result = append(result, g) // ✅ อย่าลืม append
 	}
 
-	// ตรวจ error จาก iteration
 	if err := rows.Err(); err != nil {
 		log.Println("[PTG][select/all] rows err:", err)
 		return c.Status(500).JSON(models.ApiResponse{
