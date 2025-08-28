@@ -33,13 +33,8 @@ func SelectAllProductTypeGroup(c *fiber.Ctx) error {
 		var g models.ProductTypeGroup
 		var updDate sql.NullTime
 		if err := rows.Scan(
-			&g.GroupCode,
-			&g.GroupName,
-			&g.Description,
-			&g.UpdateBy,
-			&updDate,
-			&g.IDStatus, // BIT -> bool
-			&g.IsDelete,
+			&g.GroupCode, &g.GroupName, &g.Description,
+			&g.UpdateBy, &updDate, &g.IDStatus, &g.IsDelete,
 		); err != nil {
 			log.Println(err)
 			return c.Status(500).JSON(models.ApiResponse{
@@ -50,19 +45,18 @@ func SelectAllProductTypeGroup(c *fiber.Ctx) error {
 		}
 		if updDate.Valid {
 			t := updDate.Time
-			g.UpdateDate = &t // *time.Time
+			g.UpdateDate = &t
 		}
 		result = append(result, g)
 	}
 
 	return c.JSON(models.ApiResponse{
-		Status:  "success",
-		Message: "",
-		Data:    result,
+		Status: "success",
+		Data:   result,
 	})
 }
 
-// 🔹 Select Paging
+// 🔹 Select Paging (รูปแบบเดียวกับที่ใช้ในโปรเจกต์)
 func SelectPageProductTypeGroup(c *fiber.Ctx) error {
 	page := c.QueryInt("page", 1)
 	limit := c.QueryInt("limit", 10)
@@ -91,13 +85,8 @@ func SelectPageProductTypeGroup(c *fiber.Ctx) error {
 		var g models.ProductTypeGroup
 		var updDate sql.NullTime
 		if err := rows.Scan(
-			&g.GroupCode,
-			&g.GroupName,
-			&g.Description,
-			&g.UpdateBy,
-			&updDate,
-			&g.IDStatus,
-			&g.IsDelete,
+			&g.GroupCode, &g.GroupName, &g.Description,
+			&g.UpdateBy, &updDate, &g.IDStatus, &g.IsDelete,
 		); err != nil {
 			log.Println(err)
 			return c.Status(500).JSON(models.ApiResponse{
@@ -114,8 +103,7 @@ func SelectPageProductTypeGroup(c *fiber.Ctx) error {
 	}
 
 	var total int
-	err = config.DB.QueryRow(`SELECT COUNT(*) FROM tb_product_type_group WHERE is_delete = 0`).Scan(&total)
-	if err != nil {
+	if err := config.DB.QueryRow(`SELECT COUNT(*) FROM tb_product_type_group WHERE is_delete = 0`).Scan(&total); err != nil {
 		log.Println(err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
@@ -148,13 +136,8 @@ func SelectProductTypeGroupByID(c *fiber.Ctx) error {
 	var g models.ProductTypeGroup
 	var updDate sql.NullTime
 	if err := row.Scan(
-		&g.GroupCode,
-		&g.GroupName,
-		&g.Description,
-		&g.UpdateBy,
-		&updDate,
-		&g.IDStatus,
-		&g.IsDelete,
+		&g.GroupCode, &g.GroupName, &g.Description,
+		&g.UpdateBy, &updDate, &g.IDStatus, &g.IsDelete,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return c.Status(404).JSON(models.ApiResponse{
@@ -176,9 +159,8 @@ func SelectProductTypeGroupByID(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(models.ApiResponse{
-		Status:  "success",
-		Message: "",
-		Data:    g,
+		Status: "success",
+		Data:   g,
 	})
 }
 
@@ -206,13 +188,8 @@ func SelectProductTypeGroupByName(c *fiber.Ctx) error {
 		var g models.ProductTypeGroup
 		var updDate sql.NullTime
 		if err := rows.Scan(
-			&g.GroupCode,
-			&g.GroupName,
-			&g.Description,
-			&g.UpdateBy,
-			&updDate,
-			&g.IDStatus,
-			&g.IsDelete,
+			&g.GroupCode, &g.GroupName, &g.Description,
+			&g.UpdateBy, &updDate, &g.IDStatus, &g.IsDelete,
 		); err != nil {
 			log.Println(err)
 			return c.Status(500).JSON(models.ApiResponse{
@@ -237,13 +214,12 @@ func SelectProductTypeGroupByName(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(models.ApiResponse{
-		Status:  "success",
-		Message: "",
-		Data:    result,
+		Status: "success",
+		Data:   result,
 	})
 }
 
-// 🔹 Insert ProductTypeGroup (ไม่ต้องส่ง prefix — ให้ Trigger สร้าง group_code เอง)
+// 🔹 Insert (ไม่ส่ง prefix; ใช้ Trigger + DEFAULT ใน DB; คืน group_code ที่สร้าง)
 func InsertProductTypeGroup(c *fiber.Ctx) error {
 	var g models.ProductTypeGroup
 	if err := c.BodyParser(&g); err != nil {
@@ -286,7 +262,7 @@ func InsertProductTypeGroup(c *fiber.Ctx) error {
 	})
 }
 
-// 🔹 Update (ใช้ COALESCE ตามมาตรฐาน)
+// 🔹 Update (ใช้ COALESCE ตามมาตรฐาน v1.9.x)
 func UpdateProductTypeGroupByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 	var g models.ProductTypeGroup
@@ -301,8 +277,8 @@ func UpdateProductTypeGroupByID(c *fiber.Ctx) error {
 	query := `
 		UPDATE tb_product_type_group
 		SET group_name = COALESCE(NULLIF(@GroupName, ''), group_name),
-			description = @Description,
-			update_by  = @UpdateBy
+		    description = COALESCE(NULLIF(@Description, ''), description),
+		    update_by  = @UpdateBy
 		WHERE group_code = @ID AND is_delete = 0
 	`
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
@@ -317,7 +293,7 @@ func UpdateProductTypeGroupByID(c *fiber.Ctx) error {
 		},
 	})
 	if err != nil {
-		log.Println(err)
+		log.Println("[UpdateProductTypeGroupByID] update error:", err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
 			Message: "Failed to update product type group",
@@ -332,7 +308,7 @@ func UpdateProductTypeGroupByID(c *fiber.Ctx) error {
 	})
 }
 
-// 🔹 Soft Delete (รองรับ ?user=... และ update_date TimeZone SE Asia)
+// 🔹 Soft Delete (รองรับ ?user=... + อัปเดตเวลาโซน SE Asia)
 func DeleteProductTypeGroupByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 	username := c.Query("user")
@@ -344,7 +320,7 @@ func DeleteProductTypeGroupByID(c *fiber.Ctx) error {
 		UPDATE tb_product_type_group
 		SET is_delete = 1,
 		    update_by = @UpdateBy,
-		    update_date = CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'Se Asia Standard Time' AS DATETIME)
+		    update_date = CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'SE Asia Standard Time' AS DATETIME)
 		WHERE group_code = @ID
 	`
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
@@ -357,13 +333,14 @@ func DeleteProductTypeGroupByID(c *fiber.Ctx) error {
 		},
 	})
 	if err != nil {
-		log.Println(err)
+		log.Println("[DeleteProductTypeGroupByID] soft delete error:", err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
 			Message: "Failed to soft delete product type group",
 			Data:    nil,
 		})
 	}
+
 	return c.JSON(models.ApiResponse{
 		Status:  "success",
 		Message: "Product type group marked as deleted",
@@ -382,7 +359,7 @@ func RemoveProductTypeGroupByID(c *fiber.Ctx) error {
 		},
 	})
 	if err != nil {
-		log.Println(err)
+		log.Println("[RemoveProductTypeGroupByID] hard delete error:", err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
 			Message: "Failed to hard delete product type group",
