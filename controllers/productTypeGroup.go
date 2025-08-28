@@ -220,45 +220,39 @@ func SelectProductTypeGroupByName(c *fiber.Ctx) error {
 }
 
 // 🔹 Insert (ไม่ส่ง prefix; ใช้ Trigger + DEFAULT ใน DB; คืน group_code ที่สร้าง)
+// 🔹 Insert ProductTypeGroup — ไม่อ่านค่าออกจาก INSERT
 func InsertProductTypeGroup(c *fiber.Ctx) error {
 	var g models.ProductTypeGroup
 	if err := c.BodyParser(&g); err != nil {
 		return c.Status(400).JSON(models.ApiResponse{
-			Status:  "error",
-			Message: "Invalid request body",
-			Data:    nil,
+			Status: "error", Message: "Invalid request body", Data: nil,
 		})
 	}
 
 	query := `
 		INSERT INTO tb_product_type_group (group_name, description, update_by)
-		OUTPUT inserted.group_code
 		VALUES (@GroupName, @Description, @UpdateBy)
 	`
 
-	var newCode string
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
-			return tx.QueryRow(query,
+			_, err := tx.Exec(query,
 				sql.Named("GroupName", g.GroupName),
 				sql.Named("Description", g.Description),
 				sql.Named("UpdateBy", g.UpdateBy),
-			).Scan(&newCode)
+			)
+			return err
 		},
 	})
 	if err != nil {
-		log.Println("[InsertProductTypeGroup] insert error:", err)
+		log.Printf("[InsertProductTypeGroup] insert error: %v\n", err)
 		return c.Status(500).JSON(models.ApiResponse{
-			Status:  "error",
-			Message: "Failed to insert product type group",
-			Data:    nil,
+			Status: "error", Message: "Failed to insert product type group", Data: nil,
 		})
 	}
 
 	return c.Status(201).JSON(models.ApiResponse{
-		Status:  "success",
-		Message: "Product type group inserted successfully",
-		Data:    fiber.Map{"group_code": newCode},
+		Status: "success", Message: "Product type group added successfully", Data: nil,
 	})
 }
 
