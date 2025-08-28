@@ -14,10 +14,10 @@ func init() {
 	// ให้แน่ใจว่าโฟลเดอร์มีอยู่
 	_ = os.MkdirAll("/logs/transactions", 0755)
 
-	f, err := os.OpenFile("/logs/transactions/tx.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.OpenFile("/logs/transactions/transaction.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		// ถ้าเปิดไม่ได้ ให้ fallback ไป stdout แต่ไม่ทำให้แอปดับ
-		log.Printf("[WARN] open tx log failed: %v", err)
+		log.Printf("[WARN] open transaction log failed: %v", err)
 		txLogger = log.New(os.Stdout, "", log.LstdFlags)
 	} else {
 		txLogger = log.New(f, "", log.LstdFlags)
