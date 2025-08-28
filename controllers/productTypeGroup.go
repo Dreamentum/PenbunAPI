@@ -243,7 +243,7 @@ func SelectProductTypeGroupByName(c *fiber.Ctx) error {
 	})
 }
 
-// 🔹 Insert (ใช้ prefix + Trigger สร้าง group_code และส่งกลับ)
+// 🔹 Insert ProductTypeGroup (ไม่ต้องส่ง prefix — ให้ Trigger สร้าง group_code เอง)
 func InsertProductTypeGroup(c *fiber.Ctx) error {
 	var g models.ProductTypeGroup
 	if err := c.BodyParser(&g); err != nil {
@@ -254,21 +254,16 @@ func InsertProductTypeGroup(c *fiber.Ctx) error {
 		})
 	}
 
-	// ถ้าไม่ได้ส่ง prefix มา จะใช้ค่าเริ่มต้น
-	if g.Prefix == "" {
-		g.Prefix = "PRODTG"
-	}
-
 	query := `
-		INSERT INTO tb_product_type_group (prefix, group_name, description, update_by)
+		INSERT INTO tb_product_type_group (group_name, description, update_by)
 		OUTPUT inserted.group_code
-		VALUES (@Prefix, @GroupName, @Description, @UpdateBy)
+		VALUES (@GroupName, @Description, @UpdateBy)
 	`
+
 	var newCode string
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
 			return tx.QueryRow(query,
-				sql.Named("Prefix", g.Prefix),
 				sql.Named("GroupName", g.GroupName),
 				sql.Named("Description", g.Description),
 				sql.Named("UpdateBy", g.UpdateBy),
@@ -276,7 +271,7 @@ func InsertProductTypeGroup(c *fiber.Ctx) error {
 		},
 	})
 	if err != nil {
-		log.Println(err)
+		log.Println("[InsertProductTypeGroup] insert error:", err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
 			Message: "Failed to insert product type group",
@@ -286,7 +281,7 @@ func InsertProductTypeGroup(c *fiber.Ctx) error {
 
 	return c.Status(201).JSON(models.ApiResponse{
 		Status:  "success",
-		Message: "Product type group added successfully",
+		Message: "Product type group inserted successfully",
 		Data:    fiber.Map{"group_code": newCode},
 	})
 }
