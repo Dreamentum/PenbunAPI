@@ -57,7 +57,7 @@ func main() {
 		StrictRouting:     true,
 		EnablePrintRoutes: true,
 		ServerHeader:      "Fiber",
-		AppName:           "PENBUN API v.1.9.4",
+		AppName:           "PENBUN API v.1.9.5",
 	})
 
 	// ✅ Serve favicon.ico
