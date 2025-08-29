@@ -1,5 +1,5 @@
 
-# 🅿️ **PenbunAPI v1.7 Aplha**
+# 🅿️ **PenbunAPI v1.9.3 Aplha**
 
 PenbunAPI is a RESTful API designed to manage the distribution and supply of books and stationery. It provides robust features for inventory management, order processing, and user authentication using JWT.
 
@@ -66,7 +66,7 @@ To ensure consistent, maintainable development, PenbunAPI is now governed by:
 ```
 - ฟังก์ชัน Select By NAME ยังไม่มีการ Implement
 
-## ↩️ **Previous Version** (1.7.2)
+## ↩️ **Previous Version** (1.9.2)
 - **Authentication**: Secure login with JWT-based authentication.
 - **Inventory Management**: CRUD operations for books, book types, and references.
 - **Order and Delivery**: Manage orders and deliveries.
@@ -162,7 +162,7 @@ PenbunAPI/
 API Endpoints
 -----------------------
 
-# PenbunAPI v1.7.3
+# PenbunAPI v1.9.3
 
 ## 📘 BookType API
 ### Base Path: `/api/v1/protected/booktype`

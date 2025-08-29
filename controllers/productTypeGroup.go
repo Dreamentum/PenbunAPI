@@ -28,7 +28,11 @@ func SelectAllProductTypeGroup(c *fiber.Ctx) error {
 		var upd sql.NullTime
 		if err := rows.Scan(&g.GroupCode, &g.GroupName, &g.Description, &g.UpdateBy, &upd, &g.IDStatus, &g.IsDelete); err != nil {
 			log.Println(err)
-			return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to read", Data: nil})
+			return c.Status(500).JSON(models.ApiResponse{
+				Status:  "error",
+				Message: "Failed to read",
+				Data:    nil,
+			})
 		}
 		if upd.Valid {
 			t := upd.Time
@@ -36,7 +40,11 @@ func SelectAllProductTypeGroup(c *fiber.Ctx) error {
 		}
 		out = append(out, g)
 	}
-	return c.JSON(models.ApiResponse{Status: "success", Data: out})
+	return c.JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "",
+		Data:    out,
+	})
 }
 
 // Select Paging
@@ -53,7 +61,11 @@ func SelectPageProductTypeGroup(c *fiber.Ctx) error {
 		sql.Named("Offset", offset), sql.Named("Limit", limit))
 	if err != nil {
 		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to fetch", Data: nil})
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to fetch",
+			Data:    nil,
+		})
 	}
 	defer rows.Close()
 
@@ -74,11 +86,16 @@ func SelectPageProductTypeGroup(c *fiber.Ctx) error {
 	var total int
 	if err := config.DB.QueryRow(`SELECT COUNT(*) FROM tb_product_type_group WHERE is_delete = 0`).Scan(&total); err != nil {
 		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to count", Data: nil})
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to count",
+			Data:    nil,
+		})
 	}
 	return c.JSON(models.ApiResponse{
-		Status: "success",
-		Data:   fiber.Map{"page": page, "limit": limit, "total": total, "groups": items},
+		Status:  "success",
+		Message: "",
+		Data:    fiber.Map{"page": page, "limit": limit, "total": total, "groups": items},
 	})
 }
 
@@ -93,16 +110,28 @@ func SelectProductTypeGroupByID(c *fiber.Ctx) error {
 	var upd sql.NullTime
 	if err := row.Scan(&g.GroupCode, &g.GroupName, &g.Description, &g.UpdateBy, &upd, &g.IDStatus, &g.IsDelete); err != nil {
 		if err == sql.ErrNoRows {
-			return c.Status(404).JSON(models.ApiResponse{Status: "error", Message: "Not found"})
+			return c.Status(404).JSON(models.ApiResponse{
+				Status:  "error",
+				Message: "Not found",
+				Data:    nil,
+			})
 		}
 		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to read"})
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to read",
+			Data:    nil,
+		})
 	}
 	if upd.Valid {
 		t := upd.Time
 		g.UpdateDate = &t
 	}
-	return c.JSON(models.ApiResponse{Status: "success", Data: g})
+	return c.JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "",
+		Data:    g,
+	})
 }
 
 // Select By Name (LIKE)
@@ -132,9 +161,17 @@ func SelectProductTypeGroupByName(c *fiber.Ctx) error {
 		out = append(out, g)
 	}
 	if len(out) == 0 {
-		return c.Status(404).JSON(models.ApiResponse{Status: "error", Message: "No matching group found"})
+		return c.Status(404).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "No matching group found",
+			Data:    nil,
+		})
 	}
-	return c.JSON(models.ApiResponse{Status: "success", Data: out})
+	return c.JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "",
+		Data:    out,
+	})
 }
 
 // Insert — Thin: ไม่อ่าน OUTPUT; Trigger/DEFAULT จัดการ
@@ -157,11 +194,16 @@ func InsertProductTypeGroup(c *fiber.Ctx) error {
 	})
 	if err != nil {
 		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to insert"})
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to insert",
+			Data:    fiber.Map{"group_name": g.GroupName},
+		})
 	}
 	return c.Status(201).JSON(models.ApiResponse{
-		Status: "success", Message: "Product type group added successfully",
-		Data: fiber.Map{"group_name": g.GroupName},
+		Status:  "success",
+		Message: "Product type group added successfully",
+		Data:    fiber.Map{"group_name": g.GroupName},
 	})
 }
 
@@ -190,9 +232,17 @@ func UpdateProductTypeGroupByID(c *fiber.Ctx) error {
 	})
 	if err != nil {
 		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to update"})
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to update",
+			Data:    fiber.Map{"group_name": g.GroupName},
+		})
 	}
-	return c.JSON(models.ApiResponse{Status: "success", Message: "Product type group updated successfully"})
+	return c.JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "Product type group updated successfully",
+		Data:    fiber.Map{"group_name": g.GroupName},
+	})
 }
 
 // Soft Delete — ให้ Trigger อัปเดตเวลาเอง
@@ -217,7 +267,11 @@ func DeleteProductTypeGroupByID(c *fiber.Ctx) error {
 		log.Println(err)
 		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to soft delete"})
 	}
-	return c.JSON(models.ApiResponse{Status: "success", Message: "Product type group marked as deleted"})
+	return c.JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "Product type group marked as deleted",
+		Data:    fiber.Map{"group_code": id, "update_by": username},
+	})
 }
 
 // Hard Delete
@@ -233,5 +287,9 @@ func RemoveProductTypeGroupByID(c *fiber.Ctx) error {
 		log.Println(err)
 		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to hard delete"})
 	}
-	return c.JSON(models.ApiResponse{Status: "success", Message: "Product type group removed successfully"})
+	return c.JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "Product type group removed successfully",
+		Data:    fiber.Map{"group_code": id},
+	})
 }
