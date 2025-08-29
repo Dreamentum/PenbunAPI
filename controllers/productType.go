@@ -10,211 +10,165 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// 🔹 Select All
+// Select All
 func SelectAllProductType(c *fiber.Ctx) error {
-	query := `
-		SELECT pt.product_type_id, pt.type_name, pt.type_group_code, g.group_name,
-		       pt.description, pt.update_by, pt.update_date, pt.id_status, pt.is_delete
-		FROM tb_product_type pt
-		LEFT JOIN tb_product_type_group g ON pt.type_group_code = g.group_code
-		WHERE pt.is_delete = 0
-	`
-	rows, err := config.DB.Query(query)
+	rows, err := config.DB.Query(`
+		SELECT product_type_id, type_name, type_group_name, description, update_by, update_date, id_status, is_delete
+		FROM tb_product_type
+		WHERE is_delete = 0`)
 	if err != nil {
 		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{
-			Status:  "error",
-			Message: "Failed to fetch product types",
-			Data:    nil,
-		})
+		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to fetch", Data: nil})
 	}
 	defer rows.Close()
 
-	var result []models.ProductType
+	var out []models.ProductType
 	for rows.Next() {
-		var pt models.ProductType
-		var updDate sql.NullTime
-		if err := rows.Scan(
-			&pt.ProductTypeID, &pt.TypeName, &pt.TypeGroupCode, &pt.TypeGroupName,
-			&pt.Description, &pt.UpdateBy, &updDate, &pt.IDStatus, &pt.IsDelete,
-		); err != nil {
+		var m models.ProductType
+		var upd sql.NullTime
+		if err := rows.Scan(&m.ProductTypeID, &m.TypeName, &m.TypeGroupName, &m.Description, &m.UpdateBy, &upd, &m.IDStatus, &m.IsDelete); err != nil {
 			log.Println(err)
 			return c.Status(500).JSON(models.ApiResponse{
 				Status:  "error",
-				Message: "Failed to read product types",
+				Message: "Failed to read",
 				Data:    nil,
 			})
 		}
-		if updDate.Valid {
-			t := updDate.Time
-			pt.UpdateDate = &t
+		if upd.Valid {
+			t := upd.Time
+			m.UpdateDate = &t
 		}
-		result = append(result, pt)
+		out = append(out, m)
 	}
 
 	return c.JSON(models.ApiResponse{
-		Status: "success",
-		Data:   result,
+		Status:  "success",
+		Message: "",
+		Data:    out,
 	})
 }
 
-// 🔹 Select Paging
+// Select Paging
 func SelectPageProductType(c *fiber.Ctx) error {
 	page := c.QueryInt("page", 1)
 	limit := c.QueryInt("limit", 10)
 	offset := (page - 1) * limit
 
-	query := `
-		SELECT pt.product_type_id, pt.type_name, pt.type_group_code, g.group_name,
-		       pt.description, pt.update_by, pt.update_date, pt.id_status, pt.is_delete
-		FROM tb_product_type pt
-		LEFT JOIN tb_product_type_group g ON pt.type_group_code = g.group_code
-		WHERE pt.is_delete = 0
-		ORDER BY pt.update_date DESC
-		OFFSET @Offset ROWS FETCH NEXT @Limit ROWS ONLY
-	`
-	rows, err := config.DB.Query(query, sql.Named("Offset", offset), sql.Named("Limit", limit))
+	rows, err := config.DB.Query(`
+		SELECT product_type_id, type_name, type_group_name, description, update_by, update_date, id_status, is_delete
+		FROM tb_product_type
+		WHERE is_delete = 0
+		ORDER BY update_date DESC
+		OFFSET @Offset ROWS FETCH NEXT @Limit ROWS ONLY`,
+		sql.Named("Offset", offset), sql.Named("Limit", limit))
 	if err != nil {
 		log.Println(err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
-			Message: "Failed to fetch product types",
+			Message: "Failed to fetch",
 			Data:    nil,
 		})
 	}
 	defer rows.Close()
 
-	var result []models.ProductType
+	var items []models.ProductType
 	for rows.Next() {
-		var pt models.ProductType
-		var updDate sql.NullTime
-		if err := rows.Scan(
-			&pt.ProductTypeID, &pt.TypeName, &pt.TypeGroupCode, &pt.TypeGroupName,
-			&pt.Description, &pt.UpdateBy, &updDate, &pt.IDStatus, &pt.IsDelete,
-		); err != nil {
+		var m models.ProductType
+		var upd sql.NullTime
+		if err := rows.Scan(&m.ProductTypeID, &m.TypeName, &m.TypeGroupName, &m.Description, &m.UpdateBy, &upd, &m.IDStatus, &m.IsDelete); err != nil {
 			log.Println(err)
-			return c.Status(500).JSON(models.ApiResponse{
-				Status:  "error",
-				Message: "Failed to read product types",
-				Data:    nil,
-			})
+			return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to read", Data: nil})
 		}
-		if updDate.Valid {
-			t := updDate.Time
-			pt.UpdateDate = &t
+		if upd.Valid {
+			t := upd.Time
+			m.UpdateDate = &t
 		}
-		result = append(result, pt)
+		items = append(items, m)
 	}
 
 	var total int
-	err = config.DB.QueryRow(`SELECT COUNT(*) FROM tb_product_type WHERE is_delete = 0`).Scan(&total)
-	if err != nil {
+	if err := config.DB.QueryRow(`SELECT COUNT(*) FROM tb_product_type WHERE is_delete = 0`).Scan(&total); err != nil {
 		log.Println(err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
-			Message: "Failed to count records",
+			Message: "Failed to count",
 			Data:    nil,
 		})
 	}
 
 	return c.JSON(models.ApiResponse{
-		Status: "success",
-		Data: fiber.Map{
-			"page":        page,
-			"limit":       limit,
-			"total":       total,
-			"productType": result,
-		},
+		Status:  "success",
+		Message: "",
+		Data:    fiber.Map{"page": page, "limit": limit, "total": total, "items": items},
 	})
 }
 
-// 🔹 Select By ID
+// Select By ID
 func SelectProductTypeByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	query := `
-		SELECT pt.product_type_id, pt.type_name, pt.type_group_code, g.group_name,
-		       pt.description, pt.update_by, pt.update_date, pt.id_status, pt.is_delete
-		FROM tb_product_type pt
-		LEFT JOIN tb_product_type_group g ON pt.type_group_code = g.group_code
-		WHERE pt.product_type_id = @ID AND pt.is_delete = 0
-	`
-	row := config.DB.QueryRow(query, sql.Named("ID", id))
+	row := config.DB.QueryRow(`
+		SELECT product_type_id, type_name, type_group_name, description, update_by, update_date, id_status, is_delete
+		FROM tb_product_type
+		WHERE product_type_id = @ID AND is_delete = 0`, sql.Named("ID", id))
 
-	var pt models.ProductType
-	var updDate sql.NullTime
-	if err := row.Scan(
-		&pt.ProductTypeID, &pt.TypeName, &pt.TypeGroupCode, &pt.TypeGroupName,
-		&pt.Description, &pt.UpdateBy, &updDate, &pt.IDStatus, &pt.IsDelete,
-	); err != nil {
+	var m models.ProductType
+	var upd sql.NullTime
+	if err := row.Scan(&m.ProductTypeID, &m.TypeName, &m.TypeGroupName, &m.Description, &m.UpdateBy, &upd, &m.IDStatus, &m.IsDelete); err != nil {
 		if err == sql.ErrNoRows {
 			return c.Status(404).JSON(models.ApiResponse{
 				Status:  "error",
-				Message: "Product type not found",
+				Message: "Not found",
 				Data:    nil,
 			})
 		}
 		log.Println(err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
-			Message: "Failed to read product type",
+			Message: "Failed to read",
 			Data:    nil,
 		})
 	}
-	if updDate.Valid {
-		t := updDate.Time
-		pt.UpdateDate = &t
+	if upd.Valid {
+		t := upd.Time
+		m.UpdateDate = &t
 	}
 
 	return c.JSON(models.ApiResponse{
-		Status: "success",
-		Data:   pt,
+		Status:  "success",
+		Message: "",
+		Data:    m,
 	})
 }
 
-// 🔹 Select By Name
+// Select By Name (LIKE)
 func SelectProductTypeByName(c *fiber.Ctx) error {
 	name := c.Params("name")
-	query := `
-		SELECT pt.product_type_id, pt.type_name, pt.type_group_code, g.group_name,
-		       pt.description, pt.update_by, pt.update_date, pt.id_status, pt.is_delete
-		FROM tb_product_type pt
-		LEFT JOIN tb_product_type_group g ON pt.type_group_code = g.group_code
-		WHERE pt.type_name LIKE '%' + @Name + '%' AND pt.is_delete = 0
-	`
-	rows, err := config.DB.Query(query, sql.Named("Name", name))
+	rows, err := config.DB.Query(`
+		SELECT product_type_id, type_name, type_group_name, description, update_by, update_date, id_status, is_delete
+		FROM tb_product_type
+		WHERE type_name LIKE '%' + @Name + '%' AND is_delete = 0
+		ORDER BY type_name ASC`, sql.Named("Name", name))
 	if err != nil {
 		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{
-			Status:  "error",
-			Message: "Failed to search product types",
-			Data:    nil,
-		})
+		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to fetch", Data: nil})
 	}
 	defer rows.Close()
 
-	var result []models.ProductType
+	var out []models.ProductType
 	for rows.Next() {
-		var pt models.ProductType
-		var updDate sql.NullTime
-		if err := rows.Scan(
-			&pt.ProductTypeID, &pt.TypeName, &pt.TypeGroupCode, &pt.TypeGroupName,
-			&pt.Description, &pt.UpdateBy, &updDate, &pt.IDStatus, &pt.IsDelete,
-		); err != nil {
+		var m models.ProductType
+		var upd sql.NullTime
+		if err := rows.Scan(&m.ProductTypeID, &m.TypeName, &m.TypeGroupName, &m.Description, &m.UpdateBy, &upd, &m.IDStatus, &m.IsDelete); err != nil {
 			log.Println(err)
-			return c.Status(500).JSON(models.ApiResponse{
-				Status:  "error",
-				Message: "Failed to read product types",
-				Data:    nil,
-			})
+			return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to read", Data: nil})
 		}
-		if updDate.Valid {
-			t := updDate.Time
-			pt.UpdateDate = &t
+		if upd.Valid {
+			t := upd.Time
+			m.UpdateDate = &t
 		}
-		result = append(result, pt)
+		out = append(out, m)
 	}
-
-	if len(result) == 0 {
+	if len(out) == 0 {
 		return c.Status(404).JSON(models.ApiResponse{
 			Status:  "error",
 			Message: "No matching product type found",
@@ -223,33 +177,27 @@ func SelectProductTypeByName(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(models.ApiResponse{
-		Status: "success",
-		Data:   result,
+		Status:  "success",
+		Message: "",
+		Data:    out,
 	})
 }
 
-// 🔹 Insert
+// Insert — Thin: ไม่อ่าน OUTPUT; Trigger/DEFAULT จัดการ (ไม่มี prefix ใน model)
 func InsertProductType(c *fiber.Ctx) error {
-	var pt models.ProductType
-	if err := c.BodyParser(&pt); err != nil {
-		return c.Status(400).JSON(models.ApiResponse{
-			Status:  "error",
-			Message: "Invalid request body",
-			Data:    nil,
-		})
+	var m models.ProductType
+	if err := c.BodyParser(&m); err != nil {
+		return c.Status(400).JSON(models.ApiResponse{Status: "error", Message: "Invalid request body"})
 	}
-
-	query := `
-		INSERT INTO tb_product_type (type_name, type_group_code, description, update_by)
-		VALUES (@TypeName, @TypeGroupCode, @Description, @UpdateBy)
-	`
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
-			_, err := tx.Exec(query,
-				sql.Named("TypeName", pt.TypeName),
-				sql.Named("TypeGroupCode", pt.TypeGroupCode),
-				sql.Named("Description", pt.Description),
-				sql.Named("UpdateBy", pt.UpdateBy),
+			_, err := tx.Exec(`
+				INSERT INTO tb_product_type (type_name, type_group_name, description, update_by)
+				VALUES (@TypeName, @TypeGroupName, @Description, @UpdateBy)`,
+				sql.Named("TypeName", m.TypeName),
+				sql.Named("TypeGroupName", m.TypeGroupName),
+				sql.Named("Description", m.Description),
+				sql.Named("UpdateBy", m.UpdateBy),
 			)
 			return err
 		},
@@ -258,45 +206,37 @@ func InsertProductType(c *fiber.Ctx) error {
 		log.Println(err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
-			Message: "Failed to insert product type",
-			Data:    nil,
+			Message: "Failed to insert",
+			Data:    fiber.Map{"type_name": m.TypeName},
 		})
 	}
-
 	return c.Status(201).JSON(models.ApiResponse{
 		Status:  "success",
-		Message: "Product type inserted successfully",
-		Data:    nil,
+		Message: "Product type added successfully",
+		Data:    fiber.Map{"type_name": m.TypeName},
 	})
 }
 
-// 🔹 Update (สไตล์เดียวกับตัวอย่าง — คง COALESCE เฉพาะ type_name)
+// Update — ให้ Trigger อัปเดตเวลาเอง
 func UpdateProductTypeByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	var pt models.ProductType
-	if err := c.BodyParser(&pt); err != nil {
-		return c.Status(400).JSON(models.ApiResponse{
-			Status:  "error",
-			Message: "Invalid request body",
-			Data:    nil,
-		})
+	var m models.ProductType
+	if err := c.BodyParser(&m); err != nil {
+		return c.Status(400).JSON(models.ApiResponse{Status: "error", Message: "Invalid request body"})
 	}
-
-	query := `
-		UPDATE tb_product_type
-		SET type_name      = COALESCE(NULLIF(@TypeName, ''), type_name),
-		    type_group_code = @TypeGroupCode,
-		    description     = @Description,
-		    update_by       = @UpdateBy
-		WHERE product_type_id = @ID AND is_delete = 0
-	`
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
-			_, err := tx.Exec(query,
-				sql.Named("TypeName", pt.TypeName),
-				sql.Named("TypeGroupCode", pt.TypeGroupCode),
-				sql.Named("Description", pt.Description),
-				sql.Named("UpdateBy", pt.UpdateBy),
+			_, err := tx.Exec(`
+				UPDATE tb_product_type SET
+					type_name       = COALESCE(NULLIF(@TypeName,''), type_name),
+					type_group_name = COALESCE(NULLIF(@TypeGroupName,''), type_group_name),
+					description     = @Description,
+					update_by       = @UpdateBy
+				WHERE product_type_id = @ID AND is_delete = 0`,
+				sql.Named("TypeName", m.TypeName),
+				sql.Named("TypeGroupName", m.TypeGroupName),
+				sql.Named("Description", m.Description),
+				sql.Named("UpdateBy", m.UpdateBy),
 				sql.Named("ID", id),
 			)
 			return err
@@ -306,79 +246,62 @@ func UpdateProductTypeByID(c *fiber.Ctx) error {
 		log.Println(err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
-			Message: "Failed to update product type",
-			Data:    nil,
+			Message: "Failed to update",
+			Data:    fiber.Map{"product_type_id": id},
 		})
 	}
-
 	return c.JSON(models.ApiResponse{
 		Status:  "success",
 		Message: "Product type updated successfully",
-		Data:    nil,
+		Data:    fiber.Map{"product_type_id": id},
 	})
 }
 
-// 🔹 Soft Delete (รองรับ ?user=... และอัปเดตเวลาเป็น SE Asia TZ)
+// Soft Delete — ให้ Trigger อัปเดตเวลาเอง
 func DeleteProductTypeByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 	username := c.Query("user")
 	if username == "" {
 		username = "UNKNOWN"
 	}
-
-	query := `
-		UPDATE tb_product_type
-		SET is_delete  = 1,
-		    update_by  = @UpdateBy,
-		    update_date = CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'SE Asia Standard Time' AS DATETIME)
-		WHERE product_type_id = @ID
-	`
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
-			_, err := tx.Exec(query,
-				sql.Named("ID", id),
-				sql.Named("UpdateBy", username),
+			_, err := tx.Exec(`
+				UPDATE tb_product_type
+				SET is_delete = 1, update_by = @UpdateBy
+				WHERE product_type_id = @ID`,
+				sql.Named("ID", id), sql.Named("UpdateBy", username),
 			)
 			return err
 		},
 	})
 	if err != nil {
-		log.Printf("[ERROR] DeleteProductTypeByID: %v\n", err)
-		return c.Status(500).JSON(models.ApiResponse{
-			Status:  "error",
-			Message: "Failed to soft delete product type",
-			Data:    nil,
-		})
+		log.Println(err)
+		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to soft delete"})
 	}
-
 	return c.JSON(models.ApiResponse{
 		Status:  "success",
-		Message: "Product type deleted (soft)",
-		Data:    nil,
+		Message: "Product type marked as deleted",
+		Data:    fiber.Map{"product_type_id": id, "update_by": username},
 	})
 }
 
-// 🔹 Hard Delete
+// Hard Delete
 func RemoveProductTypeByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	query := `DELETE FROM tb_product_type WHERE product_type_id = @ID`
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
-			_, err := tx.Exec(query, sql.Named("ID", id))
+			_, err := tx.Exec(`DELETE FROM tb_product_type WHERE product_type_id = @ID`, sql.Named("ID", id))
 			return err
 		},
 	})
 	if err != nil {
 		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{
-			Status:  "error",
-			Message: "Failed to hard delete product type",
-			Data:    nil,
-		})
+		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to hard delete"})
 	}
 	return c.JSON(models.ApiResponse{
 		Status:  "success",
-		Message: "Product type deleted (hard)",
-		Data:    nil,
+		Message: "Product type removed successfully",
+		Data:    fiber.Map{"product_type_id": id},
 	})
 }
