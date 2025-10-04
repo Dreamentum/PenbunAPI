@@ -36,7 +36,7 @@ func SelectAllVendor(c *fiber.Ctx) error {
 	for rows.Next() {
 		var v models.Vendor
 		if err := rows.Scan(
-			&v.VendorCode, &v.VendorName, &v.VendorTypeID, &v.TypeName,
+			&v.VendorID, &v.VendorName, &v.VendorTypeID, &v.TypeName,
 			&v.DiscountID, &v.DiscountName,
 			&v.ContactName1, &v.ContactName2, &v.Email, &v.Phone1, &v.Phone2,
 			&v.Address, &v.District, &v.Province, &v.ZipCode, &v.Note,
@@ -86,7 +86,7 @@ func SelectPageVendor(c *fiber.Ctx) error {
 	for rows.Next() {
 		var v models.Vendor
 		if err := rows.Scan(
-			&v.VendorCode, &v.VendorName, &v.VendorTypeID, &v.TypeName,
+			&v.VendorID, &v.VendorName, &v.VendorTypeID, &v.TypeName,
 			&v.DiscountID, &v.DiscountName,
 			&v.ContactName1, &v.ContactName2, &v.Email, &v.Phone1, &v.Phone2,
 			&v.Address, &v.District, &v.Province, &v.ZipCode, &v.Note,
@@ -138,7 +138,7 @@ func SelectVendorByID(c *fiber.Ctx) error {
 
 	var v models.Vendor
 	if err := row.Scan(
-		&v.VendorCode, &v.VendorName, &v.VendorTypeID, &v.TypeName,
+		&v.VendorID, &v.VendorName, &v.VendorTypeID, &v.TypeName,
 		&v.DiscountID, &v.DiscountName,
 		&v.ContactName1, &v.ContactName2, &v.Email, &v.Phone1, &v.Phone2,
 		&v.Address, &v.District, &v.Province, &v.ZipCode, &v.Note,
@@ -185,7 +185,7 @@ func SelectVendorByName(c *fiber.Ctx) error {
 	for rows.Next() {
 		var v models.Vendor
 		if err := rows.Scan(
-			&v.VendorCode, &v.VendorTypeID, &v.TypeName, &v.DiscountID, &v.VendorName,
+			&v.VendorID, &v.VendorTypeID, &v.TypeName, &v.DiscountID, &v.VendorName,
 			&v.ContactName1, &v.ContactName2, &v.Email, &v.Phone1, &v.Phone2,
 			&v.Address, &v.District, &v.Province, &v.ZipCode, &v.Note,
 			&v.UpdateBy, &v.UpdateDate, &v.IDStatus); err != nil {

@@ -1,7 +1,7 @@
 package models
 
 type Vendor struct {
-	VendorCode   string  `json:"vendor_code"`
+	VendorID     string  `json:"vendor_code"`
 	VendorTypeID string  `json:"vendor_type_id"`
 	TypeName     string  `json:"type_name"` // 👈 เพิ่มสำหรับ JOIN กับ tb_vendor_type
 	DiscountID   *string `json:"discount_id"`
