@@ -14,6 +14,7 @@ import (
 	"PenbunAPI/routes"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 
 	"github.com/joho/godotenv"
@@ -68,6 +69,17 @@ func main() {
 	// ใช้ JWTMiddleware ระดับ Global
 	// app.Use(middleware.JWTMiddleware(os.Getenv("JWT_SECRET")))
 	// log.Println("[DEBUG] JWT is :", token)
+
+	// เพิ่ม CORS Middleware
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     "*",                                                  // อนุญาตทุก origin
+		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",                        // อนุญาต methods
+		AllowHeaders:     "Origin,Content-Type,Accept,Authorization",           // อนุญาต headers
+		AllowCredentials: false,                                                // ไม่ใช้ credentials
+		ExposeHeaders:    "Content-Length",                                     // expose headers
+		MaxAge:           3600,                                                 // cache preflight 1 hour
+	}))
+	log.Println("✅ CORS enabled for all origins")
 
 	// เพิ่ม Logger Middleware
 	app.Use(logger.New(logger.Config{
