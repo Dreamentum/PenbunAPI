@@ -81,6 +81,11 @@ func main() {
 	}))
 	log.Println("✅ CORS enabled for all origins")
 
+	// [NEW] Serve PenbunWeb Static Files
+	// Serve files from the sibling directory "../PenbunWeb"
+	app.Static("/", "../PenbunWeb")
+	log.Println("✅ Serving PenbunWeb static files at /")
+
 	// เพิ่ม Logger Middleware
 	app.Use(logger.New(logger.Config{
 		Format:     "${time} | ${status} | ${latency} | ${ip} | ${method} | ${path}\n",
