@@ -42,7 +42,7 @@ It provides robust features for inventory management, order processing, and user
 
 ### Logging Standard
 
-- Every transaction logged under `/logs/transactions/tx.log`.
+- Every transaction logged under `logs/transaction.log` (configurable via `LOG_FILE` or `TRANSACTION_LOG_FILE`).
 - Format includes step count, duration, rollback/commit results.
 
 ### Example Response

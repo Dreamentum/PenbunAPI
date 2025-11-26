@@ -5,16 +5,31 @@ import (
 	"database/sql"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 )
 
 var txLogger *log.Logger
 
 func init() {
-	// ให้แน่ใจว่าโฟลเดอร์มีอยู่
-	_ = os.MkdirAll("/logs/transactions", 0755)
+	// Determine the transaction log path. Prefer TRANSACTION_LOG_FILE, then LOG_FILE, then a repo default.
+	logFile := os.Getenv("TRANSACTION_LOG_FILE")
+	if logFile == "" {
+		logFile = os.Getenv("LOG_FILE")
+	}
+	if logFile == "" {
+		logFile = "logs/transaction.log"
+	}
 
-	f, err := os.OpenFile("/logs/transactions/transaction.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	// Ensure the directory exists (create it if needed)
+	dir := filepath.Dir(logFile)
+	if dir != "." && dir != "/" && dir != "" {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			log.Printf("[WARN] failed creating transaction log directory %s: %v", dir, err)
+		}
+	}
+
+	f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		// ถ้าเปิดไม่ได้ ให้ fallback ไป stdout แต่ไม่ทำให้แอปดับ
 		log.Printf("[WARN] open transaction log failed: %v", err)
