@@ -174,12 +174,7 @@ func Login(c *fiber.Ctx) error {
 
 	// เพิ่ม Log กรณีสร้าง JWT สำเร็จ
 	log.Println("[INFO] Generate JWT successfully for user:", user.UserName)
-	config.Logger.WithFields(logrus.Fields{
-		"user_name": user.UserName,
-		"iss":       "PenbunAPI",                          // ชื่อระบบที่ออกโทเค็น
-		"iat":       time.Now().Unix(),                    // เวลาที่ออกโทเค็น
-		"exp":       time.Now().Add(time.Hour * 1).Unix(), // เวลาหมดอายุของโทเค็น
-	}).Info("JWT created successfully")
+
 
 	// ส่ง JWT token กลับไป
 	return c.JSON(fiber.Map{
@@ -228,6 +223,7 @@ func Logout(c *fiber.Ctx) error {
 
     // Logrus: บันทึกเมื่อ Logout สำเร็จ (ไม่ว่า Token จะถูก Blacklist ซ้ำหรือไม่ก็ตาม)
     config.Logger.Info("Logout process completed")
+	log.Println("[INFO] Logout process completed")
 
     return c.JSON(fiber.Map{
         "status":  "success",
