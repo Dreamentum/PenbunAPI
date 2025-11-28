@@ -5,7 +5,7 @@ import (
 	"PenbunAPI/models"
 
 	"database/sql"
-	// ลบ "log" ออก หรือไม่ใช้มันเลย เพื่อรักษามาตรฐาน Logrus 
+	"log"
 	"strings"
 	"time"
 
@@ -20,7 +20,6 @@ func Register(c *fiber.Ctx) error {
 	var user models.User
 	if err := c.BodyParser(&user); err != nil {
         config.Logger.WithError(err).Warn("Register attempt: Invalid request body")
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
 	}
 
 	// ตรวจสอบ username ว่ามีอยู่แล้วหรือไม่
@@ -127,6 +126,7 @@ func Login(c *fiber.Ctx) error {
     
     // Logrus: บันทึกการรับคำขอ Login 
     config.Logger.WithField("user_name", user.UserName).Info("Login attempt received")
+	log.Println("[INFO] Login attempt received for user:", user.UserName)
 
 	// ตรวจสอบ username และ password จาก database
 	var hashedPassword string
@@ -174,6 +174,7 @@ func Login(c *fiber.Ctx) error {
     
     // Logrus: บันทึกเมื่อตรวจสอบรหัสผ่านสำเร็จ
     config.Logger.WithField("user_name", user.UserName).Info("Password verified successfully")
+	log.Println("[INFO] Password verified successfully for user:", user.UserName)
 
 	// สร้าง JWT token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -197,6 +198,7 @@ func Login(c *fiber.Ctx) error {
 		"iss": 		 "PenbunAPI",
 		"exp": 		 time.Now().Add(time.Hour * 1).Unix(),
 	}).Info("User logged in and JWT created successfully")
+	log.Println("[INFO] Generate JWT successfully for user:", user.UserName)
 
 	// ส่ง JWT token กลับไป
 	return c.JSON(fiber.Map{
@@ -246,6 +248,7 @@ func Logout(c *fiber.Ctx) error {
 	// Logrus: บันทึกเมื่อ Logout สำเร็จ (ไม่ว่า Token จะถูก Blacklist ซ้ำหรือไม่ก็ตาม)
 	config.Logger.Info("Logout process completed")
     // ลบ log.Println(...) ที่ซ้ำซ้อนออก
+	log.Println("[INFO] Logout successful")
 
 	return c.JSON(fiber.Map{
 		"status":  "success",

@@ -1,7 +1,6 @@
 package config
 
 import (
-	"io"
 	"os"
 
 	"github.com/sirupsen/logrus"
@@ -25,9 +24,8 @@ func InitLogger() {
 		Logger.Fatal("Failed to open log file: ", err)
 	}
 
-	// ตั้งค่า output เป็นไฟล์และ Console
-	mw := io.MultiWriter(os.Stdout, file)
-	Logger.SetOutput(mw)
+	// ตั้งค่า output เป็นไฟล์
+	Logger.SetOutput(file)
 	Logger.SetFormatter(&logrus.JSONFormatter{})
 	Logger.SetLevel(logrus.InfoLevel)
 }
