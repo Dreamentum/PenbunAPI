@@ -10,12 +10,10 @@ import (
 	"time"
 
 	"PenbunAPI/config"
-	"PenbunAPI/middleware"
 	"PenbunAPI/routes"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/logger"
 
 	"github.com/joho/godotenv"
 )
@@ -75,6 +73,8 @@ func main() {
 		AllowOrigins:     "*",                                                  // อนุญาตทุก origin
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",                        // อนุญาต methods
 		AllowHeaders:     "Origin,Content-Type,Accept,Authorization",           // อนุญาต headers
+	}))
+
 	config.ConnectDatabase()
 
 	// ลงทะเบียน Routes พร้อมส่ง Database Connection
