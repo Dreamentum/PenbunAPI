@@ -208,6 +208,7 @@ func Logout(c *fiber.Ctx) error {
 
 	// Log ว่า Token ถูกเพิ่มแล้ว
 	log.Println("[DEBUG] Token added to blacklist:", token)
+	log.Println("[INFO] Logout successfully for user:", user.UserName)
 
 	return c.JSON(fiber.Map{
 		"status":  "success",
