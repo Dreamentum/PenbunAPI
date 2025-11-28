@@ -190,28 +190,47 @@ func Login(c *fiber.Ctx) error {
 }
 
 func Logout(c *fiber.Ctx) error {
-	token := c.Get("Authorization")
-	if token == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"status": "fail",
-			"error":  "Missing token",
-		})
-	}
+    token := c.Get("Authorization")
+    if token == "" {
+        // ใช้ Logrus: แจ้งเตือนเมื่อมีการเรียก Logout โดยไม่มี Token
+        config.Logger.Warn("Logout attempt failed: Missing Authorization token")
+        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+            "status": "fail",
+            "error":  "Missing token",
+        })
+    }
 
-	// ตัดคำว่า "Bearer " ออกจาก Token
-	token = strings.TrimPrefix(token, "Bearer ")
+    // ตัดคำว่า "Bearer " ออกจาก Token
+    token = strings.TrimPrefix(token, "Bearer ")
+    
+    // ตัด Token ให้สั้นลงเพื่อความปลอดภัยในการ Log
+    tokenPrefix := token
+    if len(token) > 10 {
+        tokenPrefix = token[:10] + "..." 
+    }
 
-	// เพิ่ม Token ลงใน Blacklist
-	if !config.IsBlacklisted(token) {
-		config.AddToBlacklist(token)
-	}
+    // เพิ่ม Token ลงใน Blacklist
+    if !config.IsBlacklisted(token) {
+        config.AddToBlacklist(token)
+        
+        // Logrus: บันทึกเมื่อ Token ถูกเพิ่มลง Blacklist สำเร็จ
+        config.Logger.WithFields(logrus.Fields{
+            "action":       "blacklist_add",
+            "token_prefix": tokenPrefix,
+        }).Info("User token blacklisted successfully (Logout)")
+    } else {
+        // Logrus: บันทึกเมื่อพยายาม Logout ด้วย Token ที่ถูก Blacklist แล้ว
+        config.Logger.WithFields(logrus.Fields{
+            "action":       "blacklist_duplicate",
+            "token_prefix": tokenPrefix,
+        }).Warn("Logout attempt with an already blacklisted token")
+    }
 
-	// Log ว่า Token ถูกเพิ่มแล้ว
-	log.Println("[DEBUG] Token added to blacklist:", token)
-	log.Println("[INFO] Logout successful")
+    // Logrus: บันทึกเมื่อ Logout สำเร็จ (ไม่ว่า Token จะถูก Blacklist ซ้ำหรือไม่ก็ตาม)
+    config.Logger.Info("Logout process completed")
 
-	return c.JSON(fiber.Map{
-		"status":  "success",
-		"message": "Logged out successfully",
-	})
+    return c.JSON(fiber.Map{
+        "status":  "success",
+        "message": "Logged out successfully",
+    })
 }
