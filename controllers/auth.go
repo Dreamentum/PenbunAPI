@@ -103,7 +103,10 @@ func Login(c *fiber.Ctx) error {
 	// รับ username และ password จาก request body
 	var user models.User
 	if err := c.BodyParser(&user); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"status": "fail",
+			"error":  "Invalid request",
+		})
 	}
 
 	// เพิ่ม Log สำหรับ Debug
@@ -119,11 +122,17 @@ func Login(c *fiber.Ctx) error {
 		// กรณีไม่มีข้อมูลในฐานข้อมูล
 		if err == sql.ErrNoRows {
 			log.Println("[SQL] Username not found:", user.UserName)
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid username or password"})
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"status": "fail",
+				"error":  "Invalid username or password",
+			})
 		}
 		// กรณี Error อื่นๆ
 		log.Println("[SQL] Error querying database:", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Database error"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"status": "error",
+			"error":  "Database error",
+		})
 	}
 
 	// ตรวจสอบรหัสผ่าน
@@ -132,12 +141,18 @@ func Login(c *fiber.Ctx) error {
 		// กรณีรหัสผ่านไม่ตรงกัน
 		if err == bcrypt.ErrMismatchedHashAndPassword {
 			log.Println("[DEBUG] Password mismatch for user:", user.UserName)
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid Password"})
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"status": "fail",
+				"error":  "Invalid Password",
+			})
 		}
 
 		// กรณีเกิดข้อผิดพลาดอื่นๆ ระหว่างการตรวจสอบรหัสผ่าน
 		log.Println("[DEBUG] Error verifying password:", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Database error"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"status": "error",
+			"error":  "Database error",
+		})
 	}
 	// เพิ่ม Log กรณีตรวจสอบสำเร็จ
 	log.Println("[INFO] Password verified successfully for user:", user.UserName)
@@ -151,7 +166,10 @@ func Login(c *fiber.Ctx) error {
 	})
 	tokenString, err := token.SignedString([]byte(config.GetEnv("JWT_SECRET")))
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not generate token"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"status": "error",
+			"error":  "Could not generate token",
+		})
 	}
 
 	// เพิ่ม Log กรณีสร้าง JWT สำเร็จ
@@ -164,13 +182,20 @@ func Login(c *fiber.Ctx) error {
 	}).Info("JWT created successfully")
 
 	// ส่ง JWT token กลับไป
-	return c.JSON(fiber.Map{"token": tokenString})
+	return c.JSON(fiber.Map{
+		"status":  "success",
+		"token":   tokenString,
+		"message": "Login successful",
+	})
 }
 
 func Logout(c *fiber.Ctx) error {
 	token := c.Get("Authorization")
 	if token == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Missing token"})
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"status": "fail",
+			"error":  "Missing token",
+		})
 	}
 
 	// ตัดคำว่า "Bearer " ออกจาก Token
@@ -184,5 +209,8 @@ func Logout(c *fiber.Ctx) error {
 	// Log ว่า Token ถูกเพิ่มแล้ว
 	log.Println("[DEBUG] Token added to blacklist:", token)
 
-	return c.JSON(fiber.Map{"message": "Logged out successfully"})
+	return c.JSON(fiber.Map{
+		"status":  "success",
+		"message": "Logged out successfully",
+	})
 }

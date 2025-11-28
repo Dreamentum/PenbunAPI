@@ -34,6 +34,11 @@
 
 - ใช้ `executeTransaction()` จาก `utils/transaction.go`
 - ทุก Response ใช้ `models.ApiResponse` เท่านั้น
+- ต้องมี field `status` เสมอ:
+  - `"success"`: ทำงานสำเร็จ
+  - `"fail"`: ข้อมูลผิดพลาด (Client Error)
+  - `"error"`: ระบบขัดข้อง (Server Error)
+  - `"unknow"`: ไม่ทราบสาเหตุ
 - ทุก API Route อยู่ภายใต้ `/api/v1/protected/[module]`
 
 ---

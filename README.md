@@ -23,6 +23,29 @@ It provides robust features for inventory management, order processing, and user
 }
 ```
 
+### Authentication Response
+
+**Login (`/api/v1/public/login`)**
+
+```json
+{
+  "status": "success | fail | error",
+  "token": "jwt_token_string",
+  "message": "Login successful",
+  "error": "Error message (if fail/error)"
+}
+```
+
+**Logout (`/api/v1/public/logout`)**
+
+```json
+{
+  "status": "success | fail | error",
+  "message": "Logged out successfully",
+  "error": "Error message (if fail/error)"
+}
+```
+
 ### Database Conventions
 
 - `update_date` handled by Trigger with `SE Asia Standard Time`.

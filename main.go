@@ -75,27 +75,6 @@ func main() {
 		AllowOrigins:     "*",                                                  // อนุญาตทุก origin
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",                        // อนุญาต methods
 		AllowHeaders:     "Origin,Content-Type,Accept,Authorization",           // อนุญาต headers
-		AllowCredentials: false,                                                // ไม่ใช้ credentials
-		ExposeHeaders:    "Content-Length",                                     // expose headers
-		MaxAge:           3600,                                                 // cache preflight 1 hour
-	}))
-	log.Println("✅ CORS enabled for all origins")
-
-	// [NEW] Serve PenbunWeb Static Files
-	// Serve files from the sibling directory "../PenbunWeb"
-	app.Static("/", "../PenbunWeb")
-	log.Println("✅ Serving PenbunWeb static files at /")
-
-	// เพิ่ม Logger Middleware
-	app.Use(logger.New(logger.Config{
-		Format:     "${time} | ${status} | ${latency} | ${ip} | ${method} | ${path}\n",
-		TimeFormat: "2006-01-02 15:04:05",
-		TimeZone:   "Local",
-	}))
-
-	app.Use(middleware.NewLoggerMiddleware())
-
-	// เชื่อมต่อ Database
 	config.ConnectDatabase()
 
 	// ลงทะเบียน Routes พร้อมส่ง Database Connection
