@@ -20,8 +20,9 @@ func RegisterV1Routes(app *fiber.App, db *sql.DB) {
 	RegisterPublicRoutes(public, db)
 
 	// Group สำหรับ login/logout API [ver 1.0.1]
-	public.Post("/login", controllers.Login)   // Route สำหรับ login (ไม่ใช้ Middleware)
-	public.Post("/logout", controllers.Logout) // Route สำหรับ logout (ไม่ใช้ Middleware)
+	public.Post("/login", controllers.Login) // Route สำหรับ login (ไม่ใช้ Middleware)
+	// Apply Middleware to logout to enable user logging
+	public.Post("/logout", middleware.JWTMiddleware(os.Getenv("JWT_SECRET")), controllers.Logout)
 
 	// Group สำหรับ Protected API [ver 1.0.1]
 	protected := v1.Group("/protected")

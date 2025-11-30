@@ -16,70 +16,70 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// Register - ลงทะเบียนผู้ใช้ใหม่
 func Register(c *fiber.Ctx) error {
 	var user models.User
 	if err := c.BodyParser(&user); err != nil {
-        config.Logger.WithError(err).Warn("Register attempt: Invalid request body")
+		config.Logger.WithError(err).Warn("Register attempt: Invalid request body")
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
 	}
 
 	// ตรวจสอบ username ว่ามีอยู่แล้วหรือไม่
 	var exists bool
+	// NOTE: การใช้ sql.Named ขึ้นอยู่กับ Driver ที่ใช้
 	err := config.DB.QueryRow("SELECT 1 FROM tb_users WHERE user_name = @UserName",
 		sql.Named("UserName", user.UserName)).Scan(&exists)
 	if err != nil && err != sql.ErrNoRows {
-        config.Logger.WithError(err).Error("Database error during Register check")
+		config.Logger.WithError(err).Error("Database error during Register check")
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Database error"})
 	}
 	if exists {
-        config.Logger.WithField("user_name", user.UserName).Warn("Register attempt: Username already exists")
+		config.Logger.WithField("user_name", user.UserName).Warn("Register attempt: Username already exists")
 		return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "Username already exists"})
 	}
 
 	// Hash รหัสผ่าน
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-        config.Logger.WithError(err).Error("Failed to hash password during Register")
+		config.Logger.WithError(err).Error("Failed to hash password during Register")
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to hash password"})
 	}
 
 	// บันทึกข้อมูลลงฐานข้อมูล
-	_, err = config.DB.Exec("INSERT INTO tb_users (user_name, user_password, update_date) VALUES (@UserName, @UserPassword)",
+	// แก้ไข: เพิ่ม UpdateDate ใน Exec
+	_, err = config.DB.Exec("INSERT INTO tb_users (user_name, user_password, update_date) VALUES (@UserName, @UserPassword, @UpdateDate)",
 		sql.Named("UserName", user.UserName),
 		sql.Named("UserPassword", string(hashedPassword)),
+		sql.Named("UpdateDate", time.Now()),
 	)
 	if err != nil {
-        config.Logger.WithError(err).WithField("user_name", user.UserName).Error("Failed to register user to database")
+		config.Logger.WithError(err).WithField("user_name", user.UserName).Error("Failed to register user to database")
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to register user"})
 	}
 
-    // Logrus: บันทึกเมื่อลงทะเบียนสำเร็จ
-    config.Logger.WithField("user_name", user.UserName).Info("User registered successfully")
+	config.Logger.WithField("user_name", user.UserName).Info("User registered successfully")
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"message": "User registered successfully"})
 }
 
+// RefreshToken - สร้าง JWT Token ใหม่จาก Token เก่าที่ยังไม่หมดอายุ
 func RefreshToken(c *fiber.Ctx) error {
-	// รับ Token จาก Header Authorization
 	tokenString := c.Get("Authorization")
 	if tokenString == "" {
-        config.Logger.Warn("RefreshToken attempt failed: Missing token")
+		config.Logger.Warn("RefreshToken attempt failed: Missing token")
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Missing token"})
 	}
 
-	// ตัดคำว่า "Bearer " ออกจาก Token
-	if len(tokenString) > 7 && tokenString[:7] == "Bearer " {
-		tokenString = tokenString[7:]
+	// แก้ไข: ใช้ TrimPrefix
+	tokenString = strings.TrimPrefix(tokenString, "Bearer ")
+
+	tokenPrefix := ""
+	if len(tokenString) > 10 {
+		tokenPrefix = tokenString[:10] + "..."
 	}
 
-    tokenPrefix := ""
-    if len(tokenString) > 10 {
-        tokenPrefix = tokenString[:10] + "..." 
-    }
-
-	// ตรวจสอบว่า Token อยู่ใน Blacklist หรือไม่
 	if config.IsBlacklisted(tokenString) {
-        // Logrus: บันทึกเมื่อ Token อยู่ใน Blacklist
-        config.Logger.WithField("token_prefix", tokenPrefix).Warn("Refresh attempt: Token is blacklisted")
+		config.Logger.WithField("token_prefix", tokenPrefix).Warn("Refresh attempt: Token is blacklisted")
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Token is blacklisted"})
 	}
 
@@ -88,44 +88,47 @@ func RefreshToken(c *fiber.Ctx) error {
 		return []byte(config.GetEnv("JWT_SECRET")), nil
 	})
 	if err != nil || !token.Valid {
-        // Logrus: บันทึกเมื่อ Token ไม่ถูกต้อง
-        config.Logger.WithError(err).WithField("token_prefix", tokenPrefix).Warn("Refresh attempt: Invalid or expired token")
+		config.Logger.WithError(err).WithField("token_prefix", tokenPrefix).Warn("Refresh attempt: Invalid or expired token")
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid token"})
 	}
 
+	// ดึง Claims
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		config.Logger.Error("Failed to extract claims from token during Refresh")
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Internal server error"})
+	}
+
 	// สร้าง Token ใหม่
-	claims := token.Claims.(jwt.MapClaims)
 	newToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_name": claims["user_name"], // คงค่าเดิมจาก Token เก่า
-		"iss": 		 claims["iss"],
-		"iat": 		 time.Now().Unix(),
-		"exp": 		 time.Now().Add(time.Hour * 1).Unix(),
+		"user_name": claims["user_name"],
+		"iss":       claims["iss"],
+		"iat":       time.Now().Unix(),
+		"exp":       time.Now().Add(time.Hour * 1).Unix(),
 	})
 	tokenString, err = newToken.SignedString([]byte(config.GetEnv("JWT_SECRET")))
 	if err != nil {
-        config.Logger.WithError(err).Error("Failed to generate new token during Refresh")
+		config.Logger.WithError(err).Error("Failed to generate new token during Refresh")
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to generate token"})
 	}
-    
-    // Logrus: บันทึกเมื่อ Refresh Token สำเร็จ
-    config.Logger.WithField("user_name", claims["user_name"]).Info("Token refreshed successfully")
+
+	config.Logger.WithField("user_name", claims["user_name"]).Info("Token refreshed successfully")
 
 	return c.JSON(fiber.Map{"token": tokenString})
 }
 
+// Login - เข้าสู่ระบบและสร้าง JWT Token
 func Login(c *fiber.Ctx) error {
-	// รับ username และ password จาก request body
 	var user models.User
 	if err := c.BodyParser(&user); err != nil {
-        config.Logger.WithError(err).Warn("Login attempt failed: Invalid request body")
+		config.Logger.WithError(err).Warn("Login attempt failed: Invalid request body")
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"status": "fail",
 			"error":  "Invalid request",
 		})
 	}
-    
-    // Logrus: บันทึกการรับคำขอ Login 
-    config.Logger.WithField("user_name", user.UserName).Info("Login attempt received")
+
+	config.Logger.WithField("user_name", user.UserName).Info("Login attempt received")
 	log.Println("[INFO] Login attempt received for user:", user.UserName)
 
 	// ตรวจสอบ username และ password จาก database
@@ -134,17 +137,14 @@ func Login(c *fiber.Ctx) error {
 		sql.Named("UserName", user.UserName)).Scan(&hashedPassword)
 
 	if err != nil {
-		// กรณีไม่มีข้อมูลในฐานข้อมูล
 		if err == sql.ErrNoRows {
-            // Logrus: บันทึกเมื่อไม่พบผู้ใช้
-            config.Logger.WithField("user_name", user.UserName).Warn("Login attempt: Username not found")
+			config.Logger.WithField("user_name", user.UserName).Warn("Login attempt: Username not found")
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"status": "fail",
 				"error":  "Invalid username or password",
 			})
 		}
-		// กรณี Error อื่นๆ
-        config.Logger.WithError(err).Error("Database error during Login query")
+		config.Logger.WithError(err).Error("Database error during Login query")
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"status": "error",
 			"error":  "Database error",
@@ -154,64 +154,57 @@ func Login(c *fiber.Ctx) error {
 	// ตรวจสอบรหัสผ่าน
 	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(user.Password))
 	if err != nil {
-		// กรณีรหัสผ่านไม่ตรงกัน
 		if err == bcrypt.ErrMismatchedHashAndPassword {
-            // Logrus: บันทึกเมื่อรหัสผ่านไม่ตรง
-            config.Logger.WithField("user_name", user.UserName).Warn("Login attempt: Password mismatch")
+			config.Logger.WithField("user_name", user.UserName).Warn("Login attempt: Password mismatch")
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"status": "fail",
-				"error":  "Invalid Password",
+				"error":  "Invalid username or password",
 			})
 		}
-
-		// กรณีเกิดข้อผิดพลาดอื่นๆ ระหว่างการตรวจสอบรหัสผ่าน
-        config.Logger.WithError(err).WithField("user_name", user.UserName).Error("Error verifying password")
+		config.Logger.WithError(err).WithField("user_name", user.UserName).Error("Error verifying password")
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"status": "error",
 			"error":  "Internal error during password check",
 		})
 	}
-    
-    // Logrus: บันทึกเมื่อตรวจสอบรหัสผ่านสำเร็จ
-    config.Logger.WithField("user_name", user.UserName).Info("Password verified successfully")
+
+	config.Logger.WithField("user_name", user.UserName).Info("Password verified successfully")
 	log.Println("[INFO] Password verified successfully for user:", user.UserName)
 
 	// สร้าง JWT token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_name": user.UserName,
-		"iss": 		 "PenbunAPI", 					// ชื่อระบบที่ออกโทเค็น
-		"iat": 		 time.Now().Unix(), 			// เวลาที่ออกโทเค็น
-		"exp": 		 time.Now().Add(time.Hour * 1).Unix(), // เวลาหมดอายุของโทเค็น
+		"iss":       "penbun-api",
+		"iat":       time.Now().Unix(),
+		"exp":       time.Now().Add(time.Hour * 1).Unix(),
 	})
+
+	// Signed token
 	tokenString, err := token.SignedString([]byte(config.GetEnv("JWT_SECRET")))
 	if err != nil {
-        config.Logger.WithError(err).Error("Failed to generate JWT token")
+		config.Logger.WithError(err).Error("Failed to sign token during Login")
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"status": "error",
-			"error":  "Could not generate token",
-		})
+			"error":  "Failed to create token",
+		}) // <--- แก้ไข Syntax Error ตรงนี้
 	}
 
-    // Logrus: บันทึกเมื่อสร้าง JWT สำเร็จ
-	config.Logger.WithFields(logrus.Fields{
-		"user_name": user.UserName,
-		"iss": 		 "PenbunAPI",
-		"exp": 		 time.Now().Add(time.Hour * 1).Unix(),
-	}).Info("User logged in and JWT created successfully")
-	log.Println("[INFO] Generate JWT successfully for user:", user.UserName)
+	// Logrus: บันทึกเมื่อ Login สำเร็จ
+	config.Logger.WithField("user_name", user.UserName).Info("User logged in successfully")
 
-	// ส่ง JWT token กลับไป
+	// ส่ง Token กลับไป
 	return c.JSON(fiber.Map{
-		"status":  "success",
-		"token": 	tokenString,
-		"message": "Login successful",
+		"status": "success",
+		"token":  tokenString,
 	})
-}
+} // <--- ต้องปิด func Login ที่นี่
 
-func Logout(c *fiber.Ctx) error {
+// Logout - เพิ่ม Token ลงใน Blacklist
+func Logout(c *fiber.Ctx) error { // <--- เริ่ม func Logout ที่ถูกต้อง
+
+	// รับ Token จาก Header Authorization
 	token := c.Get("Authorization")
 	if token == "" {
-		// Logrus: แจ้งเตือนเมื่อมีการเรียก Logout โดยไม่มี Token
 		config.Logger.Warn("Logout attempt failed: Missing Authorization token")
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"status": "fail",
@@ -221,33 +214,33 @@ func Logout(c *fiber.Ctx) error {
 
 	// ตัดคำว่า "Bearer " ออกจาก Token
 	token = strings.TrimPrefix(token, "Bearer ")
-	
+
 	// ตัด Token ให้สั้นลงเพื่อความปลอดภัยในการ Log
 	tokenPrefix := token
 	if len(token) > 10 {
-		tokenPrefix = token[:10] + "..." 
+		tokenPrefix = token[:10] + "..."
 	}
 
 	// เพิ่ม Token ลงใน Blacklist
 	if !config.IsBlacklisted(token) {
-		config.AddToBlacklist(token)
-		
+		// สมมติว่าฟังก์ชันนี้มีอยู่จริงใน config
+		config.AddToBlacklist(token) 
+
 		// Logrus: บันทึกเมื่อ Token ถูกเพิ่มลง Blacklist สำเร็จ
 		config.Logger.WithFields(logrus.Fields{
-			"action": 	  "blacklist_add",
+			"action":       "blacklist_add",
 			"token_prefix": tokenPrefix,
 		}).Info("User token blacklisted successfully (Logout)")
 	} else {
 		// Logrus: บันทึกเมื่อพยายาม Logout ด้วย Token ที่ถูก Blacklist แล้ว
 		config.Logger.WithFields(logrus.Fields{
-			"action": 	  "blacklist_duplicate",
+			"action":       "blacklist_duplicate",
 			"token_prefix": tokenPrefix,
 		}).Warn("Logout attempt with an already blacklisted token")
 	}
 
-	// Logrus: บันทึกเมื่อ Logout สำเร็จ (ไม่ว่า Token จะถูก Blacklist ซ้ำหรือไม่ก็ตาม)
+	// Logrus: บันทึกเมื่อ Logout สำเร็จ
 	config.Logger.Info("Logout process completed")
-    // ลบ log.Println(...) ที่ซ้ำซ้อนออก
 	log.Println("[INFO] Logout successful")
 
 	return c.JSON(fiber.Map{

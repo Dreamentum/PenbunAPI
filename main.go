@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"PenbunAPI/config"
+	"PenbunAPI/middleware"
 	"PenbunAPI/routes"
 
 	"github.com/gofiber/fiber/v2"
@@ -56,7 +57,7 @@ func main() {
 		StrictRouting:     true,
 		EnablePrintRoutes: true,
 		ServerHeader:      "Fiber",
-		AppName:           "PENBUN API v.1.9.5",
+		AppName:           "PENBUN API v.1.9.9",
 	})
 
 	// ✅ Serve favicon.ico
@@ -74,6 +75,9 @@ func main() {
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",                        // อนุญาต methods
 		AllowHeaders:     "Origin,Content-Type,Accept,Authorization",           // อนุญาต headers
 	}))
+
+	// เพิ่ม Logger Middleware
+	app.Use(middleware.NewLoggerMiddleware())
 
 	config.ConnectDatabase()
 
