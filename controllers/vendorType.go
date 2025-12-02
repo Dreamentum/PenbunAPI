@@ -6,19 +6,22 @@ import (
 	"PenbunAPI/utils"
 	"database/sql"
 	"log"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 )
 
+// ---------- 1) Select All ----------
 func SelectAllVendorType(c *fiber.Ctx) error {
 	query := `
-		SELECT vendor_type_id, type_name, description, update_by, update_date, id_status
+		SELECT vendor_type_id, prefix, type_name, description, update_by, update_date, id_status, is_delete
 		FROM tb_vendor_type
 		WHERE is_delete = 0
+		ORDER BY update_date DESC, vendor_type_id ASC
 	`
 	rows, err := config.DB.Query(query)
 	if err != nil {
-		log.Println(err)
+		log.Println("[SelectAllVendorType] query:", err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
 			Message: "Failed to fetch vendor types",
@@ -30,13 +33,18 @@ func SelectAllVendorType(c *fiber.Ctx) error {
 	var result []models.VendorType
 	for rows.Next() {
 		var vt models.VendorType
-		if err := rows.Scan(&vt.VendorTypeID, &vt.TypeName, &vt.Description, &vt.UpdateBy, &vt.UpdateDate, &vt.IDStatus); err != nil {
-			log.Println(err)
+		var upd sql.NullTime
+		if err := rows.Scan(&vt.VendorTypeID, &vt.Prefix, &vt.TypeName, &vt.Description, &vt.UpdateBy, &upd, &vt.IDStatus, &vt.IsDelete); err != nil {
+			log.Println("[SelectAllVendorType] scan:", err)
 			return c.Status(500).JSON(models.ApiResponse{
 				Status:  "error",
 				Message: "Failed to read data",
 				Data:    nil,
 			})
+		}
+		if upd.Valid {
+			t := upd.Time.Format("2006-01-02T15:04:05")
+			vt.UpdateDate = &t
 		}
 		result = append(result, vt)
 	}
@@ -48,21 +56,22 @@ func SelectAllVendorType(c *fiber.Ctx) error {
 	})
 }
 
+// ---------- 2) Select Paging ----------
 func SelectPageVendorType(c *fiber.Ctx) error {
 	page := c.QueryInt("page", 1)
 	limit := c.QueryInt("limit", 10)
 	offset := (page - 1) * limit
 
 	query := `
-		SELECT vendor_type_id, type_name, description, update_by, update_date, id_status
+		SELECT vendor_type_id, prefix, type_name, description, update_by, update_date, id_status, is_delete
 		FROM tb_vendor_type
 		WHERE is_delete = 0
-		ORDER BY update_date DESC
+		ORDER BY update_date DESC, vendor_type_id ASC
 		OFFSET @Offset ROWS FETCH NEXT @Limit ROWS ONLY
 	`
 	rows, err := config.DB.Query(query, sql.Named("Offset", offset), sql.Named("Limit", limit))
 	if err != nil {
-		log.Println(err)
+		log.Println("[SelectPageVendorType] query:", err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
 			Message: "Failed to fetch vendor types",
@@ -71,24 +80,29 @@ func SelectPageVendorType(c *fiber.Ctx) error {
 	}
 	defer rows.Close()
 
-	var result []models.VendorType
+	var items []models.VendorType
 	for rows.Next() {
 		var vt models.VendorType
-		if err := rows.Scan(&vt.VendorTypeID, &vt.TypeName, &vt.Description, &vt.UpdateBy, &vt.UpdateDate, &vt.IDStatus); err != nil {
-			log.Println(err)
+		var upd sql.NullTime
+		if err := rows.Scan(&vt.VendorTypeID, &vt.Prefix, &vt.TypeName, &vt.Description, &vt.UpdateBy, &upd, &vt.IDStatus, &vt.IsDelete); err != nil {
+			log.Println("[SelectPageVendorType] scan:", err)
 			return c.Status(500).JSON(models.ApiResponse{
 				Status:  "error",
 				Message: "Failed to read data",
 				Data:    nil,
 			})
 		}
-		result = append(result, vt)
+		if upd.Valid {
+			t := upd.Time.Format("2006-01-02T15:04:05")
+			vt.UpdateDate = &t
+		}
+		items = append(items, vt)
 	}
 
 	var total int
 	err = config.DB.QueryRow(`SELECT COUNT(*) FROM tb_vendor_type WHERE is_delete = 0`).Scan(&total)
 	if err != nil {
-		log.Println(err)
+		log.Println("[SelectPageVendorType] count:", err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
 			Message: "Failed to count records",
@@ -97,27 +111,30 @@ func SelectPageVendorType(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(models.ApiResponse{
-		Status: "success",
+		Status:  "success",
+		Message: "",
 		Data: fiber.Map{
-			"page":       page,
-			"limit":      limit,
-			"total":      total,
-			"vendorType": result,
+			"page":  page,
+			"limit": limit,
+			"total": total,
+			"items": items,
 		},
 	})
 }
 
+// ---------- 3) Select By ID ----------
 func SelectVendorTypeByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 	query := `
-		SELECT vendor_type_id, type_name, description, update_by, update_date, id_status
+		SELECT vendor_type_id, prefix, type_name, description, update_by, update_date, id_status, is_delete
 		FROM tb_vendor_type
 		WHERE vendor_type_id = @ID AND is_delete = 0
 	`
 	row := config.DB.QueryRow(query, sql.Named("ID", id))
 
 	var vt models.VendorType
-	if err := row.Scan(&vt.VendorTypeID, &vt.TypeName, &vt.Description, &vt.UpdateBy, &vt.UpdateDate, &vt.IDStatus); err != nil {
+	var upd sql.NullTime
+	if err := row.Scan(&vt.VendorTypeID, &vt.Prefix, &vt.TypeName, &vt.Description, &vt.UpdateBy, &upd, &vt.IDStatus, &vt.IsDelete); err != nil {
 		if err == sql.ErrNoRows {
 			return c.Status(404).JSON(models.ApiResponse{
 				Status:  "error",
@@ -125,12 +142,16 @@ func SelectVendorTypeByID(c *fiber.Ctx) error {
 				Data:    nil,
 			})
 		}
-		log.Println(err)
+		log.Println("[SelectVendorTypeByID] scan:", err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
 			Message: "Failed to read data",
 			Data:    nil,
 		})
+	}
+	if upd.Valid {
+		t := upd.Time.Format("2006-01-02T15:04:05")
+		vt.UpdateDate = &t
 	}
 
 	return c.JSON(models.ApiResponse{
@@ -140,16 +161,18 @@ func SelectVendorTypeByID(c *fiber.Ctx) error {
 	})
 }
 
+// ---------- 4) Select By Name (LIKE) ----------
 func SelectVendorTypeByName(c *fiber.Ctx) error {
 	name := c.Params("name")
 	query := `
-		SELECT vendor_type_id, type_name, description, update_by, update_date, id_status
+		SELECT vendor_type_id, prefix, type_name, description, update_by, update_date, id_status, is_delete
 		FROM tb_vendor_type
 		WHERE type_name LIKE '%' + @Name + '%' AND is_delete = 0
+		ORDER BY type_name ASC, vendor_type_id ASC
 	`
 	rows, err := config.DB.Query(query, sql.Named("Name", name))
 	if err != nil {
-		log.Println(err)
+		log.Println("[SelectVendorTypeByName] query:", err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
 			Message: "Failed to fetch vendor types",
@@ -161,13 +184,18 @@ func SelectVendorTypeByName(c *fiber.Ctx) error {
 	var result []models.VendorType
 	for rows.Next() {
 		var vt models.VendorType
-		if err := rows.Scan(&vt.VendorTypeID, &vt.TypeName, &vt.Description, &vt.UpdateBy, &vt.UpdateDate, &vt.IDStatus); err != nil {
-			log.Println(err)
+		var upd sql.NullTime
+		if err := rows.Scan(&vt.VendorTypeID, &vt.Prefix, &vt.TypeName, &vt.Description, &vt.UpdateBy, &upd, &vt.IDStatus, &vt.IsDelete); err != nil {
+			log.Println("[SelectVendorTypeByName] scan:", err)
 			return c.Status(500).JSON(models.ApiResponse{
 				Status:  "error",
 				Message: "Failed to read data",
 				Data:    nil,
 			})
+		}
+		if upd.Valid {
+			t := upd.Time.Format("2006-01-02T15:04:05")
+			vt.UpdateDate = &t
 		}
 		result = append(result, vt)
 	}
@@ -187,6 +215,7 @@ func SelectVendorTypeByName(c *fiber.Ctx) error {
 	})
 }
 
+// ---------- 5) Insert ----------
 func InsertVendorType(c *fiber.Ctx) error {
 	var vt models.VendorType
 	if err := c.BodyParser(&vt); err != nil {
@@ -197,36 +226,54 @@ func InsertVendorType(c *fiber.Ctx) error {
 		})
 	}
 
-	query := `
-		INSERT INTO tb_vendor_type (type_name, description, update_by)
-		VALUES (@TypeName, @Description, @UpdateBy)
-	`
+	// Validation
+	if strings.TrimSpace(vt.TypeName) == "" {
+		return c.Status(400).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "type_name is required",
+			Data:    nil,
+		})
+	}
+
+	// Resolve update_by
+	if vt.UpdateBy == nil || *vt.UpdateBy == "" {
+		username := resolveUser(c)
+		vt.UpdateBy = &username
+	}
+
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
-			_, err := tx.Exec(query,
+			// Log incoming request for debugging
+			log.Printf("[InsertVendorType] TypeName: %s, IDStatus: %v, UpdateBy: %v", vt.TypeName, vt.IDStatus, vt.UpdateBy)
+			
+			_, err := tx.Exec(`
+				INSERT INTO tb_vendor_type (type_name, description, id_status, update_by)
+				VALUES (@TypeName, @Description, @IDStatus, @UpdateBy)`,
 				sql.Named("TypeName", vt.TypeName),
 				sql.Named("Description", vt.Description),
+				sql.Named("IDStatus", vt.IDStatus),
 				sql.Named("UpdateBy", vt.UpdateBy),
 			)
 			return err
 		},
 	})
 	if err != nil {
-		log.Println(err)
+		log.Println("[InsertVendorType] exec:", err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
 			Message: "Failed to insert vendor type",
-			Data:    nil,
+			Data:    fiber.Map{"type_name": vt.TypeName},
 		})
 	}
 
 	return c.Status(201).JSON(models.ApiResponse{
 		Status:  "success",
 		Message: "Vendor type added successfully",
-		Data:    nil,
+		Data:    fiber.Map{"type_name": vt.TypeName},
 	})
 }
 
+// ---------- 6) Update By ID ----------
 func UpdateVendorTypeByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 	var vt models.VendorType
@@ -238,88 +285,149 @@ func UpdateVendorTypeByID(c *fiber.Ctx) error {
 		})
 	}
 
+	// Resolve update_by
+	if vt.UpdateBy == nil || *vt.UpdateBy == "" {
+		username := resolveUser(c)
+		vt.UpdateBy = &username
+	}
+
+	// Log incoming request for debugging
+	log.Printf("[UpdateVendorTypeByID] ID: %s, TypeName: %s, IDStatus: %v", id, vt.TypeName, vt.IDStatus)
+
 	query := `
 		UPDATE tb_vendor_type
 		SET type_name = COALESCE(NULLIF(@TypeName, ''), type_name),
 			description = @Description,
+			id_status = @IDStatus,
 			update_by = @UpdateBy
 		WHERE vendor_type_id = @ID AND is_delete = 0
 	`
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
-			_, err := tx.Exec(query,
+			res, err := tx.Exec(query,
 				sql.Named("TypeName", vt.TypeName),
 				sql.Named("Description", vt.Description),
+				sql.Named("IDStatus", vt.IDStatus),
 				sql.Named("UpdateBy", vt.UpdateBy),
 				sql.Named("ID", id),
 			)
-			return err
+			if err != nil {
+				return err
+			}
+			if aff, _ := res.RowsAffected(); aff == 0 {
+				return sql.ErrNoRows
+			}
+			return nil
 		},
 	})
+	if err == sql.ErrNoRows {
+		return c.Status(404).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Vendor type not found",
+			Data:    fiber.Map{"vendor_type_id": id},
+		})
+	}
 	if err != nil {
-		log.Println(err)
+		log.Println("[UpdateVendorTypeByID] exec:", err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
 			Message: "Failed to update vendor type",
-			Data:    nil,
+			Data:    fiber.Map{"vendor_type_id": id},
 		})
 	}
+
+	log.Printf("[UpdateVendorTypeByID] Successfully updated ID: %s with status: %v", id, vt.IDStatus)
+
 	return c.JSON(models.ApiResponse{
 		Status:  "success",
 		Message: "Vendor type updated successfully",
-		Data:    nil,
+		Data:    fiber.Map{"vendor_type_id": id},
 	})
 }
 
+// ---------- 7) Delete (Soft) ----------
 func DeleteVendorTypeByID(c *fiber.Ctx) error {
 	id := c.Params("id")
+	username := resolveUser(c)
+
 	query := `
 		UPDATE tb_vendor_type
-		SET is_delete = 1,
-			update_date = CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'SE Asia Standard Time' AS DATETIME)
+		SET is_delete = 1, update_by = @UpdateBy
 		WHERE vendor_type_id = @ID
 	`
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
-			_, err := tx.Exec(query, sql.Named("ID", id))
-			return err
+			res, err := tx.Exec(query,
+				sql.Named("ID", id),
+				sql.Named("UpdateBy", username),
+			)
+			if err != nil {
+				return err
+			}
+			if aff, _ := res.RowsAffected(); aff == 0 {
+				return sql.ErrNoRows
+			}
+			return nil
 		},
 	})
+	if err == sql.ErrNoRows {
+		return c.Status(404).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Vendor type not found",
+			Data:    fiber.Map{"vendor_type_id": id},
+		})
+	}
 	if err != nil {
-		log.Println(err)
+		log.Println("[DeleteVendorTypeByID] exec:", err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
 			Message: "Failed to soft delete vendor type",
-			Data:    nil,
+			Data:    fiber.Map{"vendor_type_id": id},
 		})
 	}
+
 	return c.JSON(models.ApiResponse{
 		Status:  "success",
 		Message: "Vendor type marked as deleted",
-		Data:    nil,
+		Data:    fiber.Map{"vendor_type_id": id, "update_by": username},
 	})
 }
 
+// ---------- 8) Remove (Hard) ----------
 func RemoveVendorTypeByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 	query := `DELETE FROM tb_vendor_type WHERE vendor_type_id = @ID`
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
-			_, err := tx.Exec(query, sql.Named("ID", id))
-			return err
+			res, err := tx.Exec(query, sql.Named("ID", id))
+			if err != nil {
+				return err
+			}
+			if aff, _ := res.RowsAffected(); aff == 0 {
+				return sql.ErrNoRows
+			}
+			return nil
 		},
 	})
+	if err == sql.ErrNoRows {
+		return c.Status(404).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Vendor type not found",
+			Data:    fiber.Map{"vendor_type_id": id},
+		})
+	}
 	if err != nil {
-		log.Println(err)
+		log.Println("[RemoveVendorTypeByID] exec:", err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
 			Message: "Failed to hard delete vendor type",
-			Data:    nil,
+			Data:    fiber.Map{"vendor_type_id": id},
 		})
 	}
+
 	return c.JSON(models.ApiResponse{
 		Status:  "success",
 		Message: "Vendor type removed successfully",
-		Data:    nil,
+		Data:    fiber.Map{"vendor_type_id": id},
 	})
 }
