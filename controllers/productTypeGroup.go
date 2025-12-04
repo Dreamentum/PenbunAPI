@@ -13,7 +13,7 @@ import (
 // Select All
 func SelectAllProductTypeGroup(c *fiber.Ctx) error {
 	rows, err := config.DB.Query(`
-		SELECT group_code, group_name, description, update_by, update_date, id_status, is_delete
+		SELECT group_id, group_name, description, update_by, update_date, id_status, is_delete
 		FROM tb_product_type_group
 		WHERE is_delete = 0`)
 	if err != nil {
@@ -26,7 +26,7 @@ func SelectAllProductTypeGroup(c *fiber.Ctx) error {
 	for rows.Next() {
 		var g models.ProductTypeGroup
 		var upd sql.NullTime
-		if err := rows.Scan(&g.GroupCode, &g.GroupName, &g.Description, &g.UpdateBy, &upd, &g.IDStatus, &g.IsDelete); err != nil {
+		if err := rows.Scan(&g.GroupId, &g.GroupName, &g.Description, &g.UpdateBy, &upd, &g.IDStatus, &g.IsDelete); err != nil {
 			log.Println(err)
 			return c.Status(500).JSON(models.ApiResponse{
 				Status:  "error",
@@ -53,7 +53,7 @@ func SelectPageProductTypeGroup(c *fiber.Ctx) error {
 	limit := c.QueryInt("limit", 10)
 	offset := (page - 1) * limit
 	rows, err := config.DB.Query(`
-		SELECT group_code, group_name, description, update_by, update_date, id_status, is_delete
+		SELECT group_id, group_name, description, update_by, update_date, id_status, is_delete
 		FROM tb_product_type_group
 		WHERE is_delete = 0
 		ORDER BY update_date DESC
@@ -73,7 +73,7 @@ func SelectPageProductTypeGroup(c *fiber.Ctx) error {
 	for rows.Next() {
 		var g models.ProductTypeGroup
 		var upd sql.NullTime
-		if err := rows.Scan(&g.GroupCode, &g.GroupName, &g.Description, &g.UpdateBy, &upd, &g.IDStatus, &g.IsDelete); err != nil {
+		if err := rows.Scan(&g.GroupId, &g.GroupName, &g.Description, &g.UpdateBy, &upd, &g.IDStatus, &g.IsDelete); err != nil {
 			log.Println(err)
 			return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to read", Data: nil})
 		}
@@ -103,12 +103,12 @@ func SelectPageProductTypeGroup(c *fiber.Ctx) error {
 func SelectProductTypeGroupByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 	row := config.DB.QueryRow(`
-		SELECT group_code, group_name, description, update_by, update_date, id_status, is_delete
+		SELECT group_id, group_name, description, update_by, update_date, id_status, is_delete
 		FROM tb_product_type_group
-		WHERE group_code = @ID AND is_delete = 0`, sql.Named("ID", id))
+		WHERE group_id = @ID AND is_delete = 0`, sql.Named("ID", id))
 	var g models.ProductTypeGroup
 	var upd sql.NullTime
-	if err := row.Scan(&g.GroupCode, &g.GroupName, &g.Description, &g.UpdateBy, &upd, &g.IDStatus, &g.IsDelete); err != nil {
+	if err := row.Scan(&g.GroupId, &g.GroupName, &g.Description, &g.UpdateBy, &upd, &g.IDStatus, &g.IsDelete); err != nil {
 		if err == sql.ErrNoRows {
 			return c.Status(404).JSON(models.ApiResponse{
 				Status:  "error",
@@ -138,7 +138,7 @@ func SelectProductTypeGroupByID(c *fiber.Ctx) error {
 func SelectProductTypeGroupByName(c *fiber.Ctx) error {
 	name := c.Params("name")
 	rows, err := config.DB.Query(`
-		SELECT group_code, group_name, description, update_by, update_date, id_status, is_delete
+		SELECT group_id, group_name, description, update_by, update_date, id_status, is_delete
 		FROM tb_product_type_group
 		WHERE group_name LIKE '%' + @Name + '%' AND is_delete = 0`, sql.Named("Name", name))
 	if err != nil {
@@ -150,7 +150,7 @@ func SelectProductTypeGroupByName(c *fiber.Ctx) error {
 	for rows.Next() {
 		var g models.ProductTypeGroup
 		var upd sql.NullTime
-		if err := rows.Scan(&g.GroupCode, &g.GroupName, &g.Description, &g.UpdateBy, &upd, &g.IDStatus, &g.IsDelete); err != nil {
+		if err := rows.Scan(&g.GroupId, &g.GroupName, &g.Description, &g.UpdateBy, &upd, &g.IDStatus, &g.IsDelete); err != nil {
 			log.Println(err)
 			return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to read", Data: nil})
 		}
@@ -220,11 +220,13 @@ func UpdateProductTypeGroupByID(c *fiber.Ctx) error {
 				UPDATE tb_product_type_group SET
 					group_name = COALESCE(NULLIF(@GroupName,''), group_name),
 					description = @Description,
-					update_by = @UpdateBy
-				WHERE group_code = @ID AND is_delete = 0`,
+					update_by = @UpdateBy,
+					id_status = @IDStatus
+				WHERE group_id = @ID AND is_delete = 0`,
 				sql.Named("GroupName", g.GroupName),
 				sql.Named("Description", g.Description),
 				sql.Named("UpdateBy", g.UpdateBy),
+				sql.Named("IDStatus", g.IDStatus),
 				sql.Named("ID", id),
 			)
 			return err
@@ -257,7 +259,7 @@ func DeleteProductTypeGroupByID(c *fiber.Ctx) error {
 			_, err := tx.Exec(`
 				UPDATE tb_product_type_group
 				SET is_delete = 1, update_by = @UpdateBy
-				WHERE group_code = @ID`,
+				WHERE group_id = @ID`,
 				sql.Named("ID", id), sql.Named("UpdateBy", username),
 			)
 			return err
@@ -270,7 +272,7 @@ func DeleteProductTypeGroupByID(c *fiber.Ctx) error {
 	return c.JSON(models.ApiResponse{
 		Status:  "success",
 		Message: "Product type group marked as deleted",
-		Data:    fiber.Map{"group_code": id, "update_by": username},
+		Data:    fiber.Map{"group_id": id, "update_by": username},
 	})
 }
 
@@ -279,7 +281,7 @@ func RemoveProductTypeGroupByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
-			_, err := tx.Exec(`DELETE FROM tb_product_type_group WHERE group_code = @ID`, sql.Named("ID", id))
+			_, err := tx.Exec(`DELETE FROM tb_product_type_group WHERE group_id = @ID`, sql.Named("ID", id))
 			return err
 		},
 	})
@@ -290,6 +292,6 @@ func RemoveProductTypeGroupByID(c *fiber.Ctx) error {
 	return c.JSON(models.ApiResponse{
 		Status:  "success",
 		Message: "Product type group removed successfully",
-		Data:    fiber.Map{"group_code": id},
+		Data:    fiber.Map{"group_id": id},
 	})
 }

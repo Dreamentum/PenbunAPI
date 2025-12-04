@@ -204,6 +204,156 @@ func Remove<Entity>ByID(c *fiber.Ctx) error {
 
 ---
 
+## 10. 🔍 Frontend Search Pattern
+
+### **Filter locally (Client-side) vs Server-side**
+
+ระบบมี 2 โหมดการค้นหา:
+
+#### **✅ Filter locally (Client-side) - ค่าเริ่มต้น**
+- 🔍 **Real-time filtering** - พิมพ์ทีละตัวอักษร ผลลัพธ์ขึ้นทันที
+- 💻 **ทำงานบน Browser** - ไม่ส่ง request ไป server
+- ⚡ **เร็วมาก** - ไม่ต้องรอ API response
+- 📦 **ค้นหาเฉพาะข้อมูลที่โหลดมาแล้ว** - จำกัดอยู่ที่หน้าปัจจุบัน
+- 🎯 **เหมาะสำหรับ:** ข้อมูลไม่เยอะ (< 100 records), ต้องการความเร็ว
+
+**Implementation:**
+```javascript
+// ใช้ FilterableSearch module
+this.filterSearch = new FilterableSearch(tableBodyId, searchInputId, {
+    searchableColumns: [1, 2, 3],
+    debounceDelay: 300,
+    caseSensitive: false
+});
+```
+
+#### **❌ Server-side (ปิด Filter locally)**
+- 🔍 **Search on Enter** - กด Enter ถึงค้นหา
+- 🌐 **ทำงานบน Server** - เรียก API `/select/name/{query}`
+- 🐌 **ช้ากว่า** - ต้องรอ API response
+- 📦 **ค้นหาทั้งหมดใน Database** - ค้นหาได้ทุก record
+- 🎯 **เหมาะสำหรับ:** ข้อมูลเยอะมาก (> 1000 records), ต้องการค้นหาทั้ง database
+
+**Implementation:**
+```javascript
+async handleSearch(event) {
+    if (!this.useClientSideFilter && event.key === 'Enter') {
+        const response = await apiClient.get(
+            `${endpoint}/select/name/${encodeURIComponent(query)}`
+        );
+        // แสดงผลลัพธ์
+    }
+}
+```
+
+### **UI Component:**
+```html
+<div class="search-mode-toggle">
+    <label>
+        <input type="checkbox" id="clientSideFilter" checked>
+        <span>Filter locally</span>
+    </label>
+</div>
+```
+
+### **แนะนำการใช้งาน:**
+
+| สถานการณ์ | โหมดที่แนะนำ |
+|-----------|--------------|
+| ข้อมูลน้อย (< 100 records) | ✅ Filter locally |
+| ต้องการความเร็ว | ✅ Filter locally |
+| ข้อมูลเยอะ (> 1000 records) | ❌ Server-side |
+| ต้องการค้นหาทั้ง database | ❌ Server-side |
+
+---
+
 🛠️ เปลี่ยน `<Entity>` เป็นชื่อ struct และ `<entity>` เป็นชื่อ table เช่น `VendorType`, `vendor_type`
 
-> 🔖 เวอร์ชันล่าสุดของมาตรฐานนี้: v1.9
+
+---
+
+## 11. 🏗️ Frontend Architecture (BaseTableManager)
+
+เพื่อลดความซ้ำซ้อนของโค้ด (DRY Principle) และง่ายต่อการดูแลรักษา Frontend ให้ใช้มาตรฐาน **BaseTableManager** สำหรับหน้าจัดการข้อมูล (CRUD) ทุกหน้า
+
+### **Concept**
+- **BaseTableManager (Parent Class)**: จัดการ Logic กลาง เช่น Fetch Data, Pagination, Sorting, Search, Modal Toggle
+- **Page Manager (Child Class)**: จัดการ Logic เฉพาะหน้า เช่น Form Fields, Validation, Custom Actions
+- **Global Features**:
+  - **Confirm Apply**: มี Checkbox ยืนยันก่อน Save/Update (Default: Enabled)
+  - **Delete Confirmation**: Modal ยืนยันการลบพร้อม Checkbox
+
+### **Implementation Pattern**
+
+```javascript
+// public/js/vendor.js
+class VendorManager extends BaseTableManager {
+    constructor() {
+        super({
+            endpoint: '/vendor',        // API Endpoint
+            idField: 'vendor_code',     // Primary Key
+            tableBodyId: 'vendorTableBody',
+            paginationId: 'paginationControls',
+            modalId: 'vendorModal',
+            deleteModalId: 'deleteModal', // Shared Delete Modal
+            formId: 'vendorForm',
+            columns: [ ... ]            // Column definitions
+        });
+    }
+
+    // Override: Custom Fetch Data (if response structure differs)
+    async fetchData(page = 1) {
+        // ...
+    }
+}
+
+// Initialize
+const vendorManager = new VendorManager();
+window.vendorManager = vendorManager; // Expose to window for HTML onclick
+```
+
+### **Benefits**
+1. **ลดโค้ด**: เขียนโค้ดเฉพาะส่วนที่ต่างกัน (ลดลง 80%)
+2. **Consistency**: Pagination, Sorting, Search ทำงานเหมือนกันทุกหน้า
+3. **Maintainability**: แก้ Logic กลางที่เดียว (BaseTableManager) มีผลทุกหน้า
+
+---
+
+## 12. 🌍 Frontend Configuration (env.js)
+
+เพื่อให้สามารถ Deploy ใน Environment ที่ต่างกันได้ง่าย (Dev, Staging, Prod) โดยไม่ต้องแก้โค้ด ให้ใช้ไฟล์ `env.js` ในการเก็บค่า Configuration
+
+### **Standard**
+1. **File Location**: `public/env.js` (ควร exclude จาก git หรือใช้ `env.example.js`)
+2. **Global Variable**: ใช้ `window.ENV` ในการเก็บค่า
+3. **Fallback**: ในโค้ดต้องมีค่า Default เสมอถ้าไม่มี `env.js`
+
+### **Example: public/env.js**
+```javascript
+window.ENV = {
+    BASE_URL: 'http://localhost:8089/api/v1',
+    TIMEOUT: 30000
+};
+```
+
+### **Usage in config.js**
+```javascript
+const Config = {
+    // Prioritize window.ENV, fallback to default
+    BASE_URL: (window.ENV && window.ENV.BASE_URL) || 'http://localhost:3000/api/v1',
+    TIMEOUT: (window.ENV && window.ENV.TIMEOUT) || 30000
+};
+```
+
+---
+
+## 13. 📌 Type Mapping Standard
+
+- **Database (MSSQL)** -> **Go (Model)** -> **JSON**
+- `BIT` -> `bool` -> `true/false` (e.g., `id_status`, `is_delete`)
+- `DATETIME` -> `string` (formatted) or `*time.Time` -> `"YYYY-MM-DDTHH:mm:ss..."`
+- `NVARCHAR` -> `string` -> `"text"`
+
+---
+
+> 🔖 เวอร์ชันล่าสุดของมาตรฐานนี้: v1.0.2 (Updated: 2025-12-04)

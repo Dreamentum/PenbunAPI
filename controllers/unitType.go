@@ -12,7 +12,7 @@ import (
 
 func SelectAllUnitType(c *fiber.Ctx) error {
 	query := `
-		SELECT unit_type_id, unit_type_name, description, update_by, update_date, id_status
+		SELECT unit_type_id, unit_type_name, COALESCE(description, ''), update_by, update_date, id_status
 		FROM tb_unit_type
 		WHERE is_delete = 0
 	`
@@ -54,7 +54,7 @@ func SelectPageUnitType(c *fiber.Ctx) error {
 	offset := (page - 1) * limit
 
 	query := `
-		SELECT unit_type_id, unit_type_name, description, update_by, update_date, id_status
+		SELECT unit_type_id, unit_type_name, COALESCE(description, ''), update_by, update_date, id_status
 		FROM tb_unit_type
 		WHERE is_delete = 0
 		ORDER BY update_date DESC
@@ -102,7 +102,7 @@ func SelectPageUnitType(c *fiber.Ctx) error {
 			"page":      page,
 			"limit":     limit,
 			"total":     total,
-			"unitTypes": result,
+			"items":     result,
 		},
 	})
 }
@@ -110,7 +110,7 @@ func SelectPageUnitType(c *fiber.Ctx) error {
 func SelectUnitTypeByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 	query := `
-		SELECT unit_type_id, unit_type_name, description, update_by, update_date, id_status
+		SELECT unit_type_id, unit_type_name, COALESCE(description, ''), update_by, update_date, id_status
 		FROM tb_unit_type
 		WHERE unit_type_id = @ID AND is_delete = 0
 	`
@@ -143,7 +143,7 @@ func SelectUnitTypeByID(c *fiber.Ctx) error {
 func SelectUnitTypeByName(c *fiber.Ctx) error {
 	name := c.Params("name")
 	query := `
-		SELECT unit_type_id, unit_type_name, description, update_by, update_date, id_status
+		SELECT unit_type_id, unit_type_name, COALESCE(description, ''), update_by, update_date, id_status
 		FROM tb_unit_type
 		WHERE unit_type_name LIKE '%' + @Name + '%' AND is_delete = 0
 	`
@@ -198,8 +198,8 @@ func InsertUnitType(c *fiber.Ctx) error {
 	}
 
 	query := `
-		INSERT INTO tb_unit_type (unit_type_name, description, update_by)
-		VALUES (@Name, @Desc, @By)
+		INSERT INTO tb_unit_type (unit_type_id, unit_type_name, description, update_by)
+		VALUES ('PENDING', @Name, @Desc, @By)
 	`
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
@@ -242,7 +242,8 @@ func UpdateUnitTypeByID(c *fiber.Ctx) error {
 		UPDATE tb_unit_type
 		SET unit_type_name = COALESCE(NULLIF(@Name, ''), unit_type_name),
 			description = @Desc,
-			update_by = @By
+			update_by = @By,
+			id_status = @Status
 		WHERE unit_type_id = @ID AND is_delete = 0
 	`
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
@@ -251,6 +252,7 @@ func UpdateUnitTypeByID(c *fiber.Ctx) error {
 				sql.Named("Name", ut.UnitTypeName),
 				sql.Named("Desc", ut.Description),
 				sql.Named("By", ut.UpdateBy),
+				sql.Named("Status", ut.IDStatus),
 				sql.Named("ID", id),
 			)
 			return err
@@ -275,8 +277,7 @@ func DeleteUnitTypeByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 	query := `
 		UPDATE tb_unit_type
-		SET is_delete = 1,
-			update_date = CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'SE Asia Standard Time' AS DATETIME)
+		SET is_delete = 1
 		WHERE unit_type_id = @ID
 	`
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{

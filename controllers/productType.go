@@ -5,6 +5,7 @@ import (
 	"PenbunAPI/models"
 	"PenbunAPI/utils"
 	"database/sql"
+	"fmt"
 	"log"
 	"strings"
 
@@ -26,7 +27,7 @@ func SelectAllProductType(c *fiber.Ctx) error {
 		SELECT  p.product_type_id,
 				p.type_name,
 				p.product_type_group_id,
-				ISNULL(g.group_code, '') AS group_code,
+				ISNULL(g.group_id, '') AS group_id,
 				ISNULL(g.group_name, '') AS group_name,
 				p.description,
 				p.update_by,
@@ -35,7 +36,7 @@ func SelectAllProductType(c *fiber.Ctx) error {
 				p.is_delete
 		FROM tb_product_type AS p
 		LEFT JOIN tb_product_type_group AS g
-			ON g.autoID = p.product_type_group_id
+			ON g.group_id = p.product_type_group_id
 		   AND g.is_delete = 0
 		WHERE p.is_delete = 0
 		ORDER BY p.update_date DESC, p.product_type_id ASC`)
@@ -53,7 +54,7 @@ func SelectAllProductType(c *fiber.Ctx) error {
 			&m.ProductTypeID,
 			&m.TypeName,
 			&m.ProductTypeGroupID,
-			&m.GroupCode,
+			&m.GroupId,
 			&m.GroupName,
 			&m.Description,
 			&m.UpdateBy,
@@ -84,7 +85,7 @@ func SelectPageProductType(c *fiber.Ctx) error {
 		SELECT  p.product_type_id,
 				p.type_name,
 				p.product_type_group_id,
-				ISNULL(g.group_code, '') AS group_code,
+				ISNULL(g.group_id, '') AS group_id,
 				ISNULL(g.group_name, '') AS group_name,
 				p.description,
 				p.update_by,
@@ -93,7 +94,7 @@ func SelectPageProductType(c *fiber.Ctx) error {
 				p.is_delete
 		FROM tb_product_type AS p
 		LEFT JOIN tb_product_type_group AS g
-			ON g.autoID = p.product_type_group_id
+			ON g.group_id = p.product_type_group_id
 		   AND g.is_delete = 0
 		WHERE p.is_delete = 0
 		ORDER BY p.update_date DESC, p.product_type_id ASC
@@ -105,7 +106,7 @@ func SelectPageProductType(c *fiber.Ctx) error {
 	}
 	defer rows.Close()
 
-	var items []models.ProductType
+	items := []models.ProductType{} // Initialize as empty slice
 	for rows.Next() {
 		var m models.ProductType
 		var upd sql.NullTime
@@ -113,7 +114,7 @@ func SelectPageProductType(c *fiber.Ctx) error {
 			&m.ProductTypeID,
 			&m.TypeName,
 			&m.ProductTypeGroupID,
-			&m.GroupCode,
+			&m.GroupId,
 			&m.GroupName,
 			&m.Description,
 			&m.UpdateBy,
@@ -151,7 +152,7 @@ func SelectProductTypeByID(c *fiber.Ctx) error {
 		SELECT  p.product_type_id,
 				p.type_name,
 				p.product_type_group_id,
-				ISNULL(g.group_code, '') AS group_code,
+				ISNULL(g.group_id, '') AS group_id,
 				ISNULL(g.group_name, '') AS group_name,
 				p.description,
 				p.update_by,
@@ -160,7 +161,7 @@ func SelectProductTypeByID(c *fiber.Ctx) error {
 				p.is_delete
 		FROM tb_product_type AS p
 		LEFT JOIN tb_product_type_group AS g
-			ON g.autoID = p.product_type_group_id
+			ON g.group_id = p.product_type_group_id
 		   AND g.is_delete = 0
 		WHERE p.product_type_id = @ID
 		  AND p.is_delete = 0`, sql.Named("ID", id))
@@ -171,7 +172,7 @@ func SelectProductTypeByID(c *fiber.Ctx) error {
 		&m.ProductTypeID,
 		&m.TypeName,
 		&m.ProductTypeGroupID,
-		&m.GroupCode,
+		&m.GroupId,
 		&m.GroupName,
 		&m.Description,
 		&m.UpdateBy,
@@ -201,7 +202,7 @@ func SelectProductTypeByName(c *fiber.Ctx) error {
 		SELECT  p.product_type_id,
 				p.type_name,
 				p.product_type_group_id,
-				ISNULL(g.group_code, '') AS group_code,
+				ISNULL(g.group_id, '') AS group_id,
 				ISNULL(g.group_name, '') AS group_name,
 				p.description,
 				p.update_by,
@@ -210,7 +211,7 @@ func SelectProductTypeByName(c *fiber.Ctx) error {
 				p.is_delete
 		FROM tb_product_type AS p
 		LEFT JOIN tb_product_type_group AS g
-			ON g.autoID = p.product_type_group_id
+			ON g.group_id = p.product_type_group_id
 		   AND g.is_delete = 0
 		WHERE p.type_name LIKE '%' + @Name + '%'
 		  AND p.is_delete = 0
@@ -229,7 +230,7 @@ func SelectProductTypeByName(c *fiber.Ctx) error {
 			&m.ProductTypeID,
 			&m.TypeName,
 			&m.ProductTypeGroupID,
-			&m.GroupCode,
+			&m.GroupId,
 			&m.GroupName,
 			&m.Description,
 			&m.UpdateBy,
@@ -253,7 +254,7 @@ func SelectProductTypeByName(c *fiber.Ctx) error {
 	return c.JSON(models.ApiResponse{Status: "success", Message: "", Data: out})
 }
 
-// ---------- 5) Insert (รองรับ ID หรือ CODE) ----------
+// ---------- 5) Insert (รองรับ GroupID string) ----------
 func InsertProductType(c *fiber.Ctx) error {
 	var m models.ProductType
 	if err := c.BodyParser(&m); err != nil {
@@ -262,53 +263,49 @@ func InsertProductType(c *fiber.Ctx) error {
 	if strings.TrimSpace(m.TypeName) == "" {
 		return c.Status(400).JSON(models.ApiResponse{Status: "error", Message: "type_name is required"})
 	}
-	if m.ProductTypeGroupID == 0 && strings.TrimSpace(m.TypeNameGroupCode) == "" {
-		return c.Status(400).JSON(models.ApiResponse{Status: "error", Message: "Require product_type_group_id or type_name_group_code"})
+
+	// Determine GroupID (ProductTypeGroupID or TypeNameGroupCode)
+	groupID := strings.TrimSpace(m.ProductTypeGroupID)
+	if groupID == "" {
+		groupID = strings.TrimSpace(m.TypeNameGroupCode)
 	}
+	if groupID == "" {
+		return c.Status(400).JSON(models.ApiResponse{Status: "error", Message: "Require product_type_group_id"})
+	}
+
 	if strings.TrimSpace(m.UpdateBy) == "" {
 		m.UpdateBy = resolveUser(c)
 	}
 
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
-			// case 1: ใช้ ID ตรง ๆ
-			if m.ProductTypeGroupID > 0 {
-				_, err := tx.Exec(`
-					INSERT INTO tb_product_type (product_type_group_id, type_name, description, update_by)
-					VALUES (@GroupID, @TypeName, @Description, @UpdateBy)`,
-					sql.Named("GroupID", m.ProductTypeGroupID),
-					sql.Named("TypeName", m.TypeName),
-					sql.Named("Description", m.Description),
-					sql.Named("UpdateBy", m.UpdateBy),
-				)
+			// Validate Group Exists
+			var exists int
+			err := tx.QueryRow("SELECT 1 FROM tb_product_type_group WHERE group_id = @ID AND is_delete = 0", sql.Named("ID", groupID)).Scan(&exists)
+			if err != nil {
+				if err == sql.ErrNoRows {
+					return fmt.Errorf("invalid group_id: %s", groupID)
+				}
 				return err
 			}
 
-			// case 2: ใช้ CODE → map เป็น autoID (ถ้าไม่พบจะไม่ insert)
-			res, err := tx.Exec(`
+			// Insert
+			_, err = tx.Exec(`
 				INSERT INTO tb_product_type (product_type_group_id, type_name, description, update_by)
-				SELECT g.autoID, @TypeName, @Description, @UpdateBy
-				FROM tb_product_type_group AS g
-				WHERE g.group_code = @GroupCode
-				  AND g.is_delete = 0`,
+				VALUES (@GroupID, @TypeName, @Description, @UpdateBy)`,
+				sql.Named("GroupID", groupID),
 				sql.Named("TypeName", m.TypeName),
 				sql.Named("Description", m.Description),
 				sql.Named("UpdateBy", m.UpdateBy),
-				sql.Named("GroupCode", m.TypeNameGroupCode),
 			)
-			if err != nil {
-				return err
-			}
-			if aff, _ := res.RowsAffected(); aff == 0 {
-				return sql.ErrNoRows // ถือว่า group_code ไม่ถูกต้อง
-			}
-			return nil
+			return err
 		},
 	})
-	if err == sql.ErrNoRows {
-		return c.Status(400).JSON(models.ApiResponse{Status: "error", Message: "Invalid group_code", Data: fiber.Map{"group_code": m.TypeNameGroupCode}})
-	}
+
 	if err != nil {
+		if strings.Contains(err.Error(), "invalid group_id") {
+			return c.Status(400).JSON(models.ApiResponse{Status: "error", Message: err.Error()})
+		}
 		log.Println("[InsertProductType] exec:", err)
 		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to insert", Data: fiber.Map{"type_name": m.TypeName}})
 	}
@@ -316,7 +313,7 @@ func InsertProductType(c *fiber.Ctx) error {
 	return c.Status(201).JSON(models.ApiResponse{Status: "success", Message: "Product type added successfully", Data: fiber.Map{"type_name": m.TypeName}})
 }
 
-// ---------- 6) Update By ID (รองรับ ID หรือ CODE) ----------
+// ---------- 6) Update By ID (รองรับ GroupID string) ----------
 func UpdateProductTypeByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 
@@ -328,22 +325,64 @@ func UpdateProductTypeByID(c *fiber.Ctx) error {
 		m.UpdateBy = resolveUser(c)
 	}
 
+	// Determine GroupID if provided
+	groupID := strings.TrimSpace(m.ProductTypeGroupID)
+	if groupID == "" {
+		groupID = strings.TrimSpace(m.TypeNameGroupCode)
+	}
+
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
-			// 6.1) เปลี่ยนกลุ่มด้วย ID โดยตรง (ถ้า > 0)
-			if m.ProductTypeGroupID > 0 {
+			// If GroupID is provided, validate and update it
+			if groupID != "" {
+				// Validate Group Exists
+				var exists int
+				err := tx.QueryRow("SELECT 1 FROM tb_product_type_group WHERE group_id = @ID AND is_delete = 0", sql.Named("ID", groupID)).Scan(&exists)
+				if err != nil {
+					if err == sql.ErrNoRows {
+						return fmt.Errorf("invalid group_id: %s", groupID)
+					}
+					return err
+				}
+
+				// Update with GroupID
 				res, err := tx.Exec(`
 					UPDATE tb_product_type
 					SET product_type_group_id = @GroupID,
 						type_name             = COALESCE(NULLIF(@TypeName, ''), type_name),
 						description           = @Description,
-						update_by             = @UpdateBy
+						update_by             = @UpdateBy,
+						id_status             = @IDStatus
 					WHERE product_type_id     = @ID
 					  AND is_delete           = 0`,
-					sql.Named("GroupID", m.ProductTypeGroupID),
+					sql.Named("GroupID", groupID),
 					sql.Named("TypeName", m.TypeName),
 					sql.Named("Description", m.Description),
 					sql.Named("UpdateBy", m.UpdateBy),
+					sql.Named("IDStatus", m.IDStatus),
+					sql.Named("ID", id),
+				)
+				if err != nil {
+					return err
+				}
+				if aff, _ := res.RowsAffected(); aff == 0 {
+					return sql.ErrNoRows
+				}
+				return nil
+			} else {
+				// Update without changing GroupID
+				res, err := tx.Exec(`
+					UPDATE tb_product_type
+					SET type_name   = COALESCE(NULLIF(@TypeName,''), type_name),
+						description = @Description,
+						update_by   = @UpdateBy,
+						id_status   = @IDStatus
+					WHERE product_type_id = @ID
+					  AND is_delete       = 0`,
+					sql.Named("TypeName", m.TypeName),
+					sql.Named("Description", m.Description),
+					sql.Named("UpdateBy", m.UpdateBy),
+					sql.Named("IDStatus", m.IDStatus),
 					sql.Named("ID", id),
 				)
 				if err != nil {
@@ -354,62 +393,16 @@ func UpdateProductTypeByID(c *fiber.Ctx) error {
 				}
 				return nil
 			}
-
-			// 6.2) เปลี่ยนกลุ่มด้วย CODE (ถ้าส่งมา)
-			if strings.TrimSpace(m.TypeNameGroupCode) != "" {
-				res, err := tx.Exec(`
-					UPDATE p
-					SET p.product_type_group_id = g.autoID,
-						p.type_name             = COALESCE(NULLIF(@TypeName,''), p.type_name),
-						p.description           = @Description,
-						p.update_by             = @UpdateBy
-					FROM tb_product_type AS p
-					INNER JOIN tb_product_type_group AS g
-							ON g.group_code = @GroupCode
-						   AND g.is_delete = 0
-					WHERE p.product_type_id = @ID
-					  AND p.is_delete       = 0`,
-					sql.Named("TypeName", m.TypeName),
-					sql.Named("Description", m.Description),
-					sql.Named("UpdateBy", m.UpdateBy),
-					sql.Named("GroupCode", m.TypeNameGroupCode),
-					sql.Named("ID", id),
-				)
-				if err != nil {
-					return err
-				}
-				if aff, _ := res.RowsAffected(); aff == 0 {
-					return sql.ErrNoRows // ไม่พบ p หรือ group_code ไม่ถูกต้อง
-				}
-				return nil
-			}
-
-			// 6.3) ไม่เปลี่ยนกลุ่ม → อัปเดตเฉพาะข้อมูลอื่น
-			res, err := tx.Exec(`
-				UPDATE tb_product_type
-				SET type_name   = COALESCE(NULLIF(@TypeName,''), type_name),
-					description = @Description,
-					update_by   = @UpdateBy
-				WHERE product_type_id = @ID
-				  AND is_delete       = 0`,
-				sql.Named("TypeName", m.TypeName),
-				sql.Named("Description", m.Description),
-				sql.Named("UpdateBy", m.UpdateBy),
-				sql.Named("ID", id),
-			)
-			if err != nil {
-				return err
-			}
-			if aff, _ := res.RowsAffected(); aff == 0 {
-				return sql.ErrNoRows
-			}
-			return nil
 		},
 	})
-	if err == sql.ErrNoRows {
-		return c.Status(404).JSON(models.ApiResponse{Status: "error", Message: "Not found or invalid group", Data: fiber.Map{"product_type_id": id}})
-	}
+
 	if err != nil {
+		if strings.Contains(err.Error(), "invalid group_id") {
+			return c.Status(400).JSON(models.ApiResponse{Status: "error", Message: err.Error()})
+		}
+		if err == sql.ErrNoRows {
+			return c.Status(404).JSON(models.ApiResponse{Status: "error", Message: "Not found", Data: fiber.Map{"product_type_id": id}})
+		}
 		log.Println("[UpdateProductTypeByID] exec:", err)
 		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to update", Data: fiber.Map{"product_type_id": id}})
 	}
