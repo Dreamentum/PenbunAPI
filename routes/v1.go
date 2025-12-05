@@ -192,4 +192,16 @@ func RegisterV1Routes(app *fiber.App, db *sql.DB) {
 	productPackConfig.Put("/delete/:id", controllers.DeleteProductPackConfigByID)          // Soft Delete
 	productPackConfig.Delete("/remove/:id", controllers.RemoveProductPackConfigByID)       // ลบข้อมูลจริง
 
+	// Group สำหรับ Product API [ver 2.0.0]
+	product := protected.Group("/product")
+	product.Post("/insert", controllers.InsertProduct)                 // เพิ่ม Product (with dummy ID 'TEMP')
+	product.Get("/select/all", controllers.SelectAllProducts)          // ดึงข้อมูล Product ทั้งหมด
+	product.Get("/select/page", controllers.SelectPageProducts)        // ดึงข้อมูล Product แบบ Paging
+	product.Get("/select/:id", controllers.SelectProductByID)          // ดึงข้อมูล Product ตาม ID
+	product.Get("/select/name/:name", controllers.SelectProductByName) // ดึงข้อมูล Product ตาม Name (TH or EN)
+	product.Put("/update/:id", controllers.UpdateProductByID)          // อัปเดต Product ตาม ID
+	product.Put("/delete/:id", controllers.DeleteProductByID)          // Soft Delete
+	product.Delete("/remove/:id", controllers.RemoveProductByID)       // ลบข้อมูลจริง
+
+
 }

@@ -1,11 +1,11 @@
-# 🅿️ PenbunAPI v1.0.2 Stable
+# 🅿️ PenbunAPI v1.0.4 Stable
 
 PenbunAPI is a RESTful API designed to manage the distribution and supply of books and stationery.  
 It provides robust features for inventory management, order processing, and user authentication using JWT.
 
 ---
 
-## 📘 Development Standards (v1.0.2)
+## 📘 Development Standards (v1.0.4)
 
 ### Core Principles (Thin API)
 
