@@ -6,6 +6,6 @@ type ProductFormatType struct {
 	Description         *string `json:"description,omitempty"`
 	UpdateBy            *string `json:"update_by,omitempty"`
 	UpdateDate          *string `json:"update_date,omitempty"`
-	IDStatus            bool    `json:"id_status"`
+	IsActive            *bool   `json:"is_active,omitempty"`
 	IsDelete            bool    `json:"is_delete"`
 }

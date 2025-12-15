@@ -6,5 +6,5 @@ type UnitType struct {
 	Description  string `json:"description"`
 	UpdateBy     string `json:"update_by"`
 	UpdateDate   string `json:"update_date"`
-	IDStatus     bool   `json:"id_status"`
+	IsActive     *bool  `json:"is_active,omitempty"`
 }

@@ -1,11 +1,11 @@
-# 🅿️ PenbunAPI v1.0.4 Stable
+# 🅿️ PenbunAPI v2.1.0 (Hybrid Core)
 
 PenbunAPI is a RESTful API designed to manage the distribution and supply of books and stationery.  
 It provides robust features for inventory management, order processing, and user authentication using JWT.
 
 ---
 
-## 📘 Development Standards (v1.0.4)
+## 📘 Development Standards (v2.1.0)
 
 ### Core Principles (Thin API)
 
@@ -128,15 +128,15 @@ PenbunAPI/
 │   ├── references.go         # Reference management endpoints
 │   ├── customer.go           # Customer management endpoints
 │   ├── customerType.go       # Customer Type management endpoints
-│   ├── book.go               # Book management endpoints
-│   ├── bookType.go           # Book Type management endpoints
-│   ├── discountType.go       # Discount Type management endpoints
 │   ├── discount.go           # Discount management endpoints
-│   ├── unitType.go           # Product Type management endpoints
-│   ├── productTypeGroup.go   # Product Type Group management endpoints
-│   ├── productType.go        # Product Type management endpoints
+│   ├── discountType.go       # Discount Type management endpoints
+│   ├── productFormatType.go  # Product Format Type endpoints
+│   ├── productCategory.go    # Product Category endpoints
+│   ├── productGroup.go       # Product Group endpoints
+│   ├── unitType.go           # Unit Type endpoints
+│   ├── vendor.go             # Vendor management endpoints
 │   ├── vendorType.go         # Vendor Type management endpoints
-│   └── vendor.go             # Vendor management endpoints
+│   └── warehouse.go          # Warehouse management endpoints
 │
 ├── models/
 │   ├── user.go               # User-related structs and logic
@@ -145,15 +145,17 @@ PenbunAPI/
 │   ├── publisher.go          # Publisher-related structs and logic
 │   ├── publisherType.go      # Publisher Type-related structs and logic
 │   ├── references.go         # Reference-related structs and logic
-│   ├── book.go               # Book management structs and logic
-│   ├── bookType.go           # Book Type management structs and logic
-│   ├── discountType.go       # Discount Type management structs and logic
-│   ├── discount.go           # Discount management structs and logic
-│   ├── unitType.go           # Product Type management endpoints
-│   ├── productType.go        # Product Type management endpoints
-│   ├── productTypeGroup.go   # Product Type Group management endpoints
-│   ├── vendorType.go         # Vendor Type management structs and logic
-│   └── vendor.go             # Vendor management structs and logic
+│   ├── customer.go           # Customer struct
+│   ├── customerType.go       # Customer Type struct
+│   ├── discount.go           # Discount struct
+│   ├── discountType.go       # Discount Type struct
+│   ├── productFormatType.go  # Product Format Type struct
+│   ├── productCategory.go    # Product Category struct
+│   ├── productGroup.go       # Product Group struct
+│   ├── unitType.go           # Unit Type struct
+│   ├── vendor.go             # Vendor struct
+│   ├── vendorType.go         # Vendor Type struct
+│   └── warehouse.go          # Warehouse struct
 │
 ├── routes/
 │   ├── public.go             # Public API version routes

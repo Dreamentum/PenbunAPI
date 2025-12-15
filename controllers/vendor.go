@@ -6,346 +6,521 @@ import (
 	"PenbunAPI/utils"
 	"database/sql"
 	"log"
-	"math"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-// SelectAllVendor: ดึงข้อมูล Vendor ทั้งหมด (is_delete = 0)
-func SelectAllVendor(c *fiber.Ctx) error {
+func SelectAllVendors(c *fiber.Ctx) error {
 	query := `
-		SELECT v.vendor_id, v.vendor_name, v.vendor_type_id, t.type_name, 
-			v.discount_id, d.discount_name,
-			v.contact_name1, v.contact_name2, v.email, v.phone1, v.phone2,
-			v.address, v.district, v.province, v.zip_code, v.note,
-			v.update_by, v.update_date, v.id_status
+		SELECT v.vendor_id, v.vendor_type_id, v.vendor_name, v.tax_id, v.branch_name,
+		       v.contact_person, v.phone1, v.phone2, v.email, v.website,
+		       v.address, v.sub_district, v.district, v.province, v.zip_code,
+		       v.credit_term_day, v.currency, v.note,
+		       v.update_by, v.update_date, v.is_active,
+		       vt.type_name
 		FROM tb_vendor v
-		LEFT JOIN tb_vendor_type t ON v.vendor_type_id = t.vendor_type_id
-		LEFT JOIN tb_discount d ON v.discount_id = d.discount_id
+		LEFT JOIN tb_vendor_type vt ON v.vendor_type_id = vt.vendor_type_id
 		WHERE v.is_delete = 0
 	`
 	rows, err := config.DB.Query(query)
 	if err != nil {
-		log.Println("SQL Query Error:", err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to fetch vendors", Data: nil})
+		log.Println(err)
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to fetch vendors",
+			Data:    nil,
+		})
 	}
 	defer rows.Close()
 
-	var result []models.Vendor
+	var list []models.Vendor
 	for rows.Next() {
-		var v models.Vendor
+		var item models.Vendor
 		var upd sql.NullTime
 		if err := rows.Scan(
-			&v.VendorID, &v.VendorName, &v.VendorTypeID, &v.TypeName,
-			&v.DiscountID, &v.DiscountName,
-			&v.ContactName1, &v.ContactName2, &v.Email, &v.Phone1, &v.Phone2,
-			&v.Address, &v.District, &v.Province, &v.ZipCode, &v.Note,
-			&v.UpdateBy, &upd, &v.IDStatus); err != nil {
-			log.Println("Rows Scan Error:", err)
-			return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to read data", Data: nil})
+			&item.VendorID, &item.VendorTypeID, &item.VendorName, &item.TaxID, &item.BranchName,
+			&item.ContactPerson, &item.Phone1, &item.Phone2, &item.Email, &item.Website,
+			&item.Address, &item.SubDistrict, &item.District, &item.Province, &item.ZipCode,
+			&item.CreditTermDay, &item.Currency, &item.Note,
+			&item.UpdateBy, &upd, &item.IsActive, &item.VendorTypeName,
+		); err != nil {
+			log.Println(err)
+			return c.Status(500).JSON(models.ApiResponse{
+				Status:  "error",
+				Message: "Failed to read data",
+				Data:    nil,
+			})
 		}
-		if upd.Valid { t := upd.Time.Format("2006-01-02T15:04:05"); v.UpdateDate = &t }
-		result = append(result, v)
+		if upd.Valid {
+			t := upd.Time.Format("2006-01-02T15:04:05")
+			item.UpdateDate = &t
+		}
+		list = append(list, item)
 	}
-	if err := rows.Err(); err != nil { log.Println("Rows Iteration Error:", err); return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Database iteration error", Data: nil}) }
-	return c.JSON(models.ApiResponse{Status: "success", Message: "Vendors retrieved successfully", Data: result})
+
+	return c.JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "",
+		Data:    list,
+	})
 }
 
-
-// SelectPageVendor: ดึงข้อมูล Vendor แบบแบ่งหน้า (Pagination)
-func SelectPageVendor(c *fiber.Ctx) error {
+func SelectPageVendors(c *fiber.Ctx) error {
 	page := c.QueryInt("page", 1)
 	limit := c.QueryInt("limit", 10)
-	if page < 1 { page = 1 }
-	if limit < 1 { limit = 10 }
 	offset := (page - 1) * limit
 
 	query := `
-		SELECT v.vendor_id, v.vendor_name, v.vendor_type_id, t.type_name,
-			v.discount_id, d.discount_name,
-			v.contact_name1, v.contact_name2, v.email, v.phone1, v.phone2,
-			v.address, v.district, v.province, v.zip_code, v.note,
-			v.update_by, v.update_date, v.id_status
+		SELECT v.vendor_id, v.vendor_type_id, v.vendor_name, v.tax_id, v.branch_name,
+		       v.contact_person, v.phone1, v.phone2, v.email, v.website,
+		       v.address, v.sub_district, v.district, v.province, v.zip_code,
+		       v.credit_term_day, v.currency, v.note,
+		       v.update_by, v.update_date, v.is_active,
+		       vt.type_name
 		FROM tb_vendor v
-		LEFT JOIN tb_vendor_type t ON v.vendor_type_id = t.vendor_type_id
-		LEFT JOIN tb_discount d ON v.discount_id = d.discount_id
+		LEFT JOIN tb_vendor_type vt ON v.vendor_type_id = vt.vendor_type_id
 		WHERE v.is_delete = 0
 		ORDER BY v.update_date DESC
-		OFFSET @p1 ROWS FETCH NEXT @p2 ROWS ONLY
+		OFFSET @Offset ROWS FETCH NEXT @Limit ROWS ONLY
 	`
-
-	rows, err := config.DB.Query(query, offset, limit) 
+	rows, err := config.DB.Query(query, sql.Named("Offset", offset), sql.Named("Limit", limit))
 	if err != nil {
-		log.Println("SQL Query Error:", err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to fetch vendors", Data: nil})
+		log.Println(err)
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to fetch vendors",
+			Data:    nil,
+		})
 	}
 	defer rows.Close()
 
-	var result []models.Vendor
+	var list []models.Vendor
 	for rows.Next() {
-		var v models.Vendor
+		var item models.Vendor
 		var upd sql.NullTime
 		if err := rows.Scan(
-			&v.VendorID, &v.VendorName, &v.VendorTypeID, &v.TypeName,
-			&v.DiscountID, &v.DiscountName,
-			&v.ContactName1, &v.ContactName2, &v.Email, &v.Phone1, &v.Phone2,
-			&v.Address, &v.District, &v.Province, &v.ZipCode, &v.Note,
-			&v.UpdateBy, &upd, &v.IDStatus); err != nil {
-			log.Println("Rows Scan Error:", err)
-			return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to read data", Data: nil})
+			&item.VendorID, &item.VendorTypeID, &item.VendorName, &item.TaxID, &item.BranchName,
+			&item.ContactPerson, &item.Phone1, &item.Phone2, &item.Email, &item.Website,
+			&item.Address, &item.SubDistrict, &item.District, &item.Province, &item.ZipCode,
+			&item.CreditTermDay, &item.Currency, &item.Note,
+			&item.UpdateBy, &upd, &item.IsActive, &item.VendorTypeName,
+		); err != nil {
+			log.Println(err)
+			return c.Status(500).JSON(models.ApiResponse{
+				Status:  "error",
+				Message: "Failed to read data",
+				Data:    nil,
+			})
 		}
-		if upd.Valid { t := upd.Time.Format("2006-01-02T15:04:05"); v.UpdateDate = &t }
-		result = append(result, v)
+		if upd.Valid {
+			t := upd.Time.Format("2006-01-02T15:04:05")
+			item.UpdateDate = &t
+		}
+		list = append(list, item)
 	}
-	
-	if err := rows.Err(); err != nil { log.Println("Rows Iteration Error:", err); return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Database iteration error", Data: nil}) }
 
 	var total int
 	err = config.DB.QueryRow(`SELECT COUNT(*) FROM tb_vendor WHERE is_delete = 0`).Scan(&total)
 	if err != nil {
-		log.Println("Count Query Error:", err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to count records", Data: nil})
+		log.Println(err)
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to count records",
+			Data:    nil,
+		})
 	}
-	
-	totalPage := int(math.Ceil(float64(total) / float64(limit)))
 
 	return c.JSON(models.ApiResponse{
 		Status: "success",
 		Data: fiber.Map{
-			"page": page, "limit": limit, "total": total, "total_page": totalPage, "vendor": result,
+			"page":   page,
+			"limit":  limit,
+			"total":  total,
+			"vendors": list,
 		},
 	})
 }
 
-
-// SelectVendorByID: ดึงข้อมูล Vendor ตาม vendor_id
 func SelectVendorByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-
 	query := `
-		SELECT v.vendor_id, v.vendor_name, v.vendor_type_id, t.type_name,
-			v.discount_id, d.discount_name,
-			v.contact_name1, v.contact_name2, v.email, v.phone1, v.phone2,
-			v.address, v.district, v.province, v.zip_code, v.note,
-			v.update_by, v.update_date, v.id_status
+		SELECT v.vendor_id, v.vendor_type_id, v.vendor_name, v.tax_id, v.branch_name,
+		       v.contact_person, v.phone1, v.phone2, v.email, v.website,
+		       v.address, v.sub_district, v.district, v.province, v.zip_code,
+		       v.credit_term_day, v.currency, v.note,
+		       v.update_by, v.update_date, v.is_active,
+		       vt.type_name
 		FROM tb_vendor v
-		LEFT JOIN tb_vendor_type t ON v.vendor_type_id = t.vendor_type_id
-		LEFT JOIN tb_discount d ON v.discount_id = d.discount_id
-		WHERE v.vendor_id = @p1 AND v.is_delete = 0
+		LEFT JOIN tb_vendor_type vt ON v.vendor_type_id = vt.vendor_type_id
+		WHERE v.vendor_id = @ID AND v.is_delete = 0
 	`
-	
-	row := config.DB.QueryRow(query, id)
+	row := config.DB.QueryRow(query, sql.Named("ID", id))
 
-	var v models.Vendor
+	var item models.Vendor
 	var upd sql.NullTime
 	if err := row.Scan(
-		&v.VendorID, &v.VendorName, &v.VendorTypeID, &v.TypeName,
-		&v.DiscountID, &v.DiscountName,
-		&v.ContactName1, &v.ContactName2, &v.Email, &v.Phone1, &v.Phone2,
-		&v.Address, &v.District, &v.Province, &v.ZipCode, &v.Note,
-		&v.UpdateBy, &upd, &v.IDStatus); err != nil {
+		&item.VendorID, &item.VendorTypeID, &item.VendorName, &item.TaxID, &item.BranchName,
+		&item.ContactPerson, &item.Phone1, &item.Phone2, &item.Email, &item.Website,
+		&item.Address, &item.SubDistrict, &item.District, &item.Province, &item.ZipCode,
+		&item.CreditTermDay, &item.Currency, &item.Note,
+		&item.UpdateBy, &upd, &item.IsActive, &item.VendorTypeName,
+	); err != nil {
 		if err == sql.ErrNoRows {
-			return c.Status(404).JSON(models.ApiResponse{Status: "error", Message: "Vendor not found", Data: nil})
+			return c.Status(404).JSON(models.ApiResponse{
+				Status:  "error",
+				Message: "Vendor not found",
+				Data:    nil,
+			})
 		}
 		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to read data", Data: nil})
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to read data",
+			Data:    nil,
+		})
 	}
-	if upd.Valid { t := upd.Time.Format("2006-01-02T15:04:05"); v.UpdateDate = &t }
+	if upd.Valid {
+		t := upd.Time.Format("2006-01-02T15:04:05")
+		item.UpdateDate = &t
+	}
 
-	return c.JSON(models.ApiResponse{Status: "success", Message: "", Data: v})
+	return c.JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "",
+		Data:    item,
+	})
 }
 
-
-// SelectVendorByName: ดึงข้อมูล Vendor ตามชื่อ (LIKE search)
 func SelectVendorByName(c *fiber.Ctx) error {
 	name := c.Params("name")
-
 	query := `
-		SELECT v.vendor_id, v.vendor_type_id, t.type_name, v.discount_id, v.vendor_name,
-			v.contact_name1, v.contact_name2, v.email, v.phone1, v.phone2,
-			v.address, v.district, v.province, v.zip_code, v.note,
-			v.update_by, v.update_date, v.id_status
+		SELECT v.vendor_id, v.vendor_type_id, v.vendor_name, v.tax_id, v.branch_name,
+		       v.contact_person, v.phone1, v.phone2, v.email, v.website,
+		       v.address, v.sub_district, v.district, v.province, v.zip_code,
+		       v.credit_term_day, v.currency, v.note,
+		       v.update_by, v.update_date, v.is_active,
+		       vt.type_name
 		FROM tb_vendor v
-		LEFT JOIN tb_vendor_type t ON v.vendor_type_id = t.vendor_type_id
-		WHERE v.vendor_name LIKE '%' + @p1 + '%' AND v.is_delete = 0
+		LEFT JOIN tb_vendor_type vt ON v.vendor_type_id = vt.vendor_type_id
+		WHERE v.vendor_name LIKE '%' + @Name + '%' AND v.is_delete = 0
 	`
-
-	rows, err := config.DB.Query(query, name)
+	rows, err := config.DB.Query(query, sql.Named("Name", name))
 	if err != nil {
 		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to fetch vendors", Data: nil})
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to fetch vendors",
+			Data:    nil,
+		})
 	}
 	defer rows.Close()
 
-	var result []models.Vendor
+	var list []models.Vendor
 	for rows.Next() {
-		var v models.Vendor
+		var item models.Vendor
 		var upd sql.NullTime
 		if err := rows.Scan(
-			&v.VendorID, &v.VendorTypeID, &v.TypeName, &v.DiscountID, &v.VendorName,
-			&v.ContactName1, &v.ContactName2, &v.Email, &v.Phone1, &v.Phone2,
-			&v.Address, &v.District, &v.Province, &v.ZipCode, &v.Note,
-			&v.UpdateBy, &upd, &v.IDStatus); err != nil {
+			&item.VendorID, &item.VendorTypeID, &item.VendorName, &item.TaxID, &item.BranchName,
+			&item.ContactPerson, &item.Phone1, &item.Phone2, &item.Email, &item.Website,
+			&item.Address, &item.SubDistrict, &item.District, &item.Province, &item.ZipCode,
+			&item.CreditTermDay, &item.Currency, &item.Note,
+			&item.UpdateBy, &upd, &item.IsActive, &item.VendorTypeName,
+		); err != nil {
 			log.Println(err)
-			return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to read data", Data: nil})
+			return c.Status(500).JSON(models.ApiResponse{
+				Status:  "error",
+				Message: "Failed to read data",
+				Data:    nil,
+			})
 		}
-		if upd.Valid { t := upd.Time.Format("2006-01-02T15:04:05"); v.UpdateDate = &t }
-		result = append(result, v)
+		if upd.Valid {
+			t := upd.Time.Format("2006-01-02T15:04:05")
+			item.UpdateDate = &t
+		}
+		list = append(list, item)
 	}
 
-	if len(result) == 0 {
-		return c.Status(404).JSON(models.ApiResponse{Status: "error", Message: "No matching vendor found", Data: nil})
+	if len(list) == 0 {
+		return c.Status(404).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "No matching vendor found",
+			Data:    nil,
+		})
 	}
 
-	return c.JSON(models.ApiResponse{Status: "success", Message: "", Data: result})
+	return c.JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "",
+		Data:    list,
+	})
 }
 
-
-// InsertVendor: เพิ่ม Vendor ใหม่ (ใช้ Named Parameter)
 func InsertVendor(c *fiber.Ctx) error {
-	var v models.Vendor
-	if err := c.BodyParser(&v); err != nil {
-		return c.Status(400).JSON(models.ApiResponse{Status: "error", Message: "Invalid request body", Data: nil})
+	var item models.Vendor
+	if err := c.BodyParser(&item); err != nil {
+		return c.Status(400).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Invalid request body",
+			Data:    nil,
+		})
+	}
+
+	if item.VendorTypeID == "" {
+		return c.Status(400).JSON(models.ApiResponse{Status: "error", Message: "vendor_type_id is required"})
+	}
+	if strings.TrimSpace(item.VendorName) == "" {
+		return c.Status(400).JSON(models.ApiResponse{Status: "error", Message: "vendor_name is required"})
+	}
+
+	if item.UpdateBy == nil || *item.UpdateBy == "" {
+		u := utils.ResolveUser(c)
+		item.UpdateBy = &u
 	}
 
 	query := `
 		INSERT INTO tb_vendor (
-			vendor_type_id, discount_id, vendor_name, contact_name1, contact_name2,
-			email, phone1, phone2, address, district, province, zip_code, note, update_by, id_status
+			vendor_type_id, vendor_name, tax_id, branch_name,
+			contact_person, phone1, phone2, email, website,
+			address, sub_district, district, province, zip_code,
+			credit_term_day, currency, note, update_by
 		)
 		VALUES (
-			@TypeID, @DiscountID, @Name, @Contact1, @Contact2,
-			@Email, @Phone1, @Phone2, @Address, @District, @Province, @Zip, @Note, @UpdateBy, @Status
+			@TypeID, @Name, @TaxID, @Branch,
+			@Contact, @Phone1, @Phone2, @Email, @Website,
+			@Address, @SubDistrict, @District, @Province, @ZipCode,
+			COALESCE(@CreditTerm, 30), COALESCE(@Currency, 'THB'), @Note, @UpdateBy
 		)
 	`
 
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
 			_, err := tx.Exec(query,
-				sql.Named("TypeID", v.VendorTypeID),
-				sql.Named("DiscountID", v.DiscountID),
-				sql.Named("Name", v.VendorName),
-				sql.Named("Contact1", v.ContactName1),
-				sql.Named("Contact2", v.ContactName2),
-				sql.Named("Email", v.Email),
-				sql.Named("Phone1", v.Phone1),
-				sql.Named("Phone2", v.Phone2),
-				sql.Named("Address", v.Address),
-				sql.Named("District", v.District),
-				sql.Named("Province", v.Province),
-				sql.Named("Zip", v.ZipCode),
-				sql.Named("Note", v.Note),
-				sql.Named("UpdateBy", v.UpdateBy),
-				sql.Named("Status", v.IDStatus),
+				sql.Named("TypeID", item.VendorTypeID),
+				sql.Named("Name", item.VendorName),
+				sql.Named("TaxID", item.TaxID),
+				sql.Named("Branch", item.BranchName),
+				sql.Named("Contact", item.ContactPerson),
+				sql.Named("Phone1", item.Phone1),
+				sql.Named("Phone2", item.Phone2),
+				sql.Named("Email", item.Email),
+				sql.Named("Website", item.Website),
+				sql.Named("Address", item.Address),
+				sql.Named("SubDistrict", item.SubDistrict),
+				sql.Named("District", item.District),
+				sql.Named("Province", item.Province),
+				sql.Named("ZipCode", item.ZipCode),
+				sql.Named("CreditTerm", item.CreditTermDay),
+				sql.Named("Currency", item.Currency),
+				sql.Named("Note", item.Note),
+				sql.Named("UpdateBy", item.UpdateBy),
 			)
 			return err
 		},
 	})
 	if err != nil {
 		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to insert vendor", Data: nil})
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to insert vendor",
+			Data:    nil,
+		})
 	}
 
-	return c.Status(201).JSON(models.ApiResponse{Status: "success", Message: "Vendor added successfully", Data: nil})
+	return c.Status(201).JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "Vendor added successfully",
+		Data:    nil,
+	})
 }
 
-
-// UpdateVendorByID: อัปเดตข้อมูล Vendor ตาม vendor_id
 func UpdateVendorByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	var v models.Vendor
-	if err := c.BodyParser(&v); err != nil {
-		return c.Status(400).JSON(models.ApiResponse{Status: "error", Message: "Invalid request body", Data: nil})
+	var item models.Vendor
+	if err := c.BodyParser(&item); err != nil {
+		return c.Status(400).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Invalid request body",
+			Data:    nil,
+		})
+	}
+
+	if item.UpdateBy == nil || *item.UpdateBy == "" {
+		u := utils.ResolveUser(c)
+		item.UpdateBy = &u
 	}
 
 	query := `
-		UPDATE tb_vendor SET
-			vendor_type_id = COALESCE(NULLIF(@TypeID, ''), vendor_type_id),
-			discount_id = COALESCE(NULLIF(@DiscountID, ''), discount_id),
+		UPDATE tb_vendor
+		SET vendor_type_id = COALESCE(NULLIF(@TypeID, ''), vendor_type_id),
 			vendor_name = COALESCE(NULLIF(@Name, ''), vendor_name),
-			contact_name1 = @Contact1,
-			contact_name2 = @Contact2,
-			email = @Email,
-			phone1 = @Phone1,
-			phone2 = @Phone2,
-			address = @Address,
-			district = @District,
-			province = @Province,
-			zip_code = @Zip,
-			note = @Note,
+			tax_id = COALESCE(@TaxID, tax_id),
+			branch_name = COALESCE(@Branch, branch_name),
+			contact_person = COALESCE(@Contact, contact_person),
+			phone1 = COALESCE(@Phone1, phone1),
+			phone2 = COALESCE(@Phone2, phone2),
+			email = COALESCE(@Email, email),
+			website = COALESCE(@Website, website),
+			address = COALESCE(@Address, address),
+			sub_district = COALESCE(@SubDistrict, sub_district),
+			district = COALESCE(@District, district),
+			province = COALESCE(@Province, province),
+			zip_code = COALESCE(@ZipCode, zip_code),
+			credit_term_day = COALESCE(@CreditTerm, credit_term_day),
+			currency = COALESCE(@Currency, currency),
+			note = COALESCE(@Note, note),
 			update_by = @UpdateBy,
-			id_status = @Status
+			is_active = COALESCE(@IsActive, is_active)
 		WHERE vendor_id = @ID AND is_delete = 0
 	`
 
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
-			_, err := tx.Exec(query,
-				sql.Named("TypeID", v.VendorTypeID),
-				sql.Named("DiscountID", v.DiscountID),
-				sql.Named("Name", v.VendorName),
-				sql.Named("Contact1", v.ContactName1),
-				sql.Named("Contact2", v.ContactName2),
-				sql.Named("Email", v.Email),
-				sql.Named("Phone1", v.Phone1),
-				sql.Named("Phone2", v.Phone2),
-				sql.Named("Address", v.Address),
-				sql.Named("District", v.District),
-				sql.Named("Province", v.Province),
-				sql.Named("Zip", v.ZipCode),
-				sql.Named("Note", v.Note),
-				sql.Named("UpdateBy", v.UpdateBy),
-				sql.Named("Status", v.IDStatus),
+			res, err := tx.Exec(query,
+				sql.Named("TypeID", item.VendorTypeID),
+				sql.Named("Name", item.VendorName),
+				sql.Named("TaxID", item.TaxID),
+				sql.Named("Branch", item.BranchName),
+				sql.Named("Contact", item.ContactPerson),
+				sql.Named("Phone1", item.Phone1),
+				sql.Named("Phone2", item.Phone2),
+				sql.Named("Email", item.Email),
+				sql.Named("Website", item.Website),
+				sql.Named("Address", item.Address),
+				sql.Named("SubDistrict", item.SubDistrict),
+				sql.Named("District", item.District),
+				sql.Named("Province", item.Province),
+				sql.Named("ZipCode", item.ZipCode),
+				sql.Named("CreditTerm", item.CreditTermDay),
+				sql.Named("Currency", item.Currency),
+				sql.Named("Note", item.Note),
+				sql.Named("UpdateBy", item.UpdateBy),
+				sql.Named("IsActive", item.IsActive),
 				sql.Named("ID", id),
 			)
-			return err
+			if err != nil {
+				return err
+			}
+			rows, err := res.RowsAffected()
+			if err != nil {
+				return err
+			}
+			if rows == 0 {
+				return sql.ErrNoRows
+			}
+			return nil
 		},
 	})
+	if err == sql.ErrNoRows {
+		return c.Status(404).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Vendor not found",
+			Data:    nil,
+		})
+	}
 	if err != nil {
 		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to update vendor", Data: nil})
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to update vendor",
+			Data:    nil,
+		})
 	}
 
-	return c.JSON(models.ApiResponse{Status: "success", Message: "Vendor updated successfully", Data: nil})
+	return c.JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "Vendor updated successfully",
+		Data:    nil,
+	})
 }
 
-
-// DeleteVendorByID: Soft Delete
 func DeleteVendorByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	query := `
-		UPDATE tb_vendor
-		SET is_delete = 1,
-			update_date = CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'SE Asia Standard Time' AS DATETIME)
-		WHERE vendor_id = @ID
-	`
+	username := utils.ResolveUser(c)
+
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
-			_, err := tx.Exec(query, sql.Named("ID", id))
-			return err
+			res, err := tx.Exec(`
+				UPDATE tb_vendor
+				SET is_delete = 1,
+					is_active = 0,
+					update_date = CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'SE Asia Standard Time' AS DATETIME),
+					update_by = @UpdateBy
+				WHERE vendor_id = @ID AND is_delete = 0`,
+				sql.Named("ID", id),
+				sql.Named("UpdateBy", username),
+			)
+			if err != nil {
+				return err
+			}
+			rows, err := res.RowsAffected()
+			if err != nil {
+				return err
+			}
+			if rows == 0 {
+				return sql.ErrNoRows
+			}
+			return nil
 		},
 	})
+	if err == sql.ErrNoRows {
+		return c.Status(404).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Vendor not found",
+			Data:    nil,
+		})
+	}
 	if err != nil {
 		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to soft delete vendor", Data: nil})
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to delete vendor",
+			Data:    nil,
+		})
 	}
-	return c.JSON(models.ApiResponse{Status: "success", Message: "Vendor marked as deleted", Data: nil})
+	return c.JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "Vendor deleted successfully",
+		Data:    nil,
+	})
 }
 
-
-// RemoveVendorByID: Hard Delete
 func RemoveVendorByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	query := `DELETE FROM tb_vendor WHERE vendor_id = @ID`
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
-			_, err := tx.Exec(query, sql.Named("ID", id))
-			return err
+			res, err := tx.Exec(`DELETE FROM tb_vendor WHERE vendor_id = @ID`, sql.Named("ID", id))
+			if err != nil {
+				return err
+			}
+			rows, err := res.RowsAffected()
+			if err != nil {
+				return err
+			}
+			if rows == 0 {
+				return sql.ErrNoRows
+			}
+			return nil
 		},
 	})
+	if err == sql.ErrNoRows {
+		return c.Status(404).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Vendor not found",
+			Data:    nil,
+		})
+	}
 	if err != nil {
 		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to hard delete vendor", Data: nil})
+		return c.Status(500).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Failed to remove vendor",
+			Data:    nil,
+		})
 	}
-	return c.JSON(models.ApiResponse{Status: "success", Message: "Vendor removed successfully", Data: nil})
+	return c.JSON(models.ApiResponse{
+		Status:  "success",
+		Message: "Vendor removed successfully",
+		Data:    nil,
+	})
 }

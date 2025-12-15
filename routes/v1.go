@@ -31,39 +31,16 @@ func RegisterV1Routes(app *fiber.App, db *sql.DB) {
 	protected.Post("/refresh", controllers.RefreshToken)  // Route สำหรับ Refresh Token
 	protected.Get("/reference", controllers.GetReference) // Route สำหรับ get ค่า references
 
-	// Routes สำหรับการจัดการ books [ver 1.0.1]
-	// Group สำหรับ Book API [ver 1.5.9]
-	book := protected.Group("/book")
-	book.Post("/insert", controllers.InsertBook)                 // เพิ่ม Book
-	book.Get("/select/all", controllers.SelectAllBooks)          // ดึงข้อมูล Book ทั้งหมด (ไม่มี Paging)
-	book.Get("/select/page", controllers.SelectPageBooks)        // ดึงข้อมูล Book แบบ Paging
-	book.Get("/select/:id", controllers.SelectBookByID)          // ดึงข้อมูล Book ตาม book_code
-	book.Get("/select/name/:name", controllers.SelectBookByName) // ดึงข้อมูล Book ตามชื่อหนังสือแบบ LIKE
-	book.Put("/update/:id", controllers.UpdateBookByID)          // อัปเดต Book ตาม book_code
-	book.Put("/delete/:id", controllers.DeleteBookByID)          // Soft Delete Book (is_delete = 1)
-	book.Delete("/remove/:id", controllers.RemoveBookByID)       // ลบข้อมูลจริง (Hard Delete)
-
-	// Group สำหรับ Publisher Type API [ver 1.5.1]
-	publisherType := protected.Group("/publishertype")
-	publisherType.Post("/insert", controllers.InsertPublisherType)            // เพิ่ม Publisher Type
-	publisherType.Get("/select/all", controllers.SelectAllPublisherTypes)     // ดึงข้อมูล Publisher Type ทั้งหมด
-	publisherType.Get("/select/page", controllers.SelectPagePublisherTypes)   // ดึงข้อมูล Publisher Type แบบ Paging
-	publisherType.Get("/select/:id", controllers.SelectPublisherTypeByID)     // ดึงข้อมูล Publisher Type ตาม ID
-	publisherType.Get("/select/:name", controllers.SelectPublisherTypeByName) // ดึงข้อมูล Publisher Type ตาม Name [version 1.6.3]
-	publisherType.Put("/update/:id", controllers.UpdatePublisherTypeByID)     // อัปเดต Publisher Type ตาม ID
-	publisherType.Put("/delete/:id", controllers.DeletePublisherTypeByID)     // เปลี่ยน is_delete = 1
-	publisherType.Delete("/remove/:id", controllers.RemovePublisherTypeByID)  // ลบข้อมูลจริง
-
-	// Group สำหรับ Publisher API [ver 1.5.1]
-	publisher := protected.Group("/publisher")
-	publisher.Post("/insert", controllers.InsertPublisher)            // เพิ่ม Publisher
-	publisher.Get("/select/all", controllers.SelectAllPublisher)      // ดึงข้อมูล Publisher ทั้งหมด (ไม่มี Paging)
-	publisher.Get("/select/page", controllers.SelectPagePublisher)    // ดึงข้อมูล Publisher ทั้งหมด (รองรับ Paging)
-	publisher.Get("/select/:id", controllers.SelectPublisherByID)     // ดึงข้อมูล Publisher ตาม ID
-	publisher.Get("/select/:name", controllers.SelectPublisherByName) // ดึงข้อมูล Publisher ตาม Name [version 1.6.3]
-	publisher.Put("/update/:id", controllers.UpdatePublisherByID)     // อัปเดต Publisher ตาม ID
-	publisher.Put("/delete/:id", controllers.DeletePublisherByID)     // เปลี่ยน is_delete = 1
-	publisher.Delete("/remove/:id", controllers.RemovePublisherByID)  // ลบข้อมูลจริง
+	// Group สำหรับ Vendor API [ver 2.3.0]
+	vendor := protected.Group("/vendor")
+	vendor.Post("/insert", controllers.InsertVendor)
+	vendor.Get("/select/all", controllers.SelectAllVendors)
+	vendor.Get("/select/page", controllers.SelectPageVendors)
+	vendor.Get("/select/:id", controllers.SelectVendorByID)
+	vendor.Get("/select/name/:name", controllers.SelectVendorByName)
+	vendor.Put("/update/:id", controllers.UpdateVendorByID)
+	vendor.Put("/delete/:id", controllers.DeleteVendorByID)
+	vendor.Delete("/remove/:id", controllers.RemoveVendorByID)
 
 	// Group สำหรับ Customer Type API [ver 1.5.3]
 	customerType := protected.Group("/customertype")
@@ -85,22 +62,13 @@ func RegisterV1Routes(app *fiber.App, db *sql.DB) {
 	customer.Put("/delete/:id", controllers.DeleteCustomerByID)    // เปลี่ยน is_delete = 1
 	customer.Delete("/remove/:id", controllers.RemoveCustomerByID) // ลบข้อมูลจริง
 
-	// Group สำหรับ Book Type API [ver 1.5.3]
-	bookType := protected.Group("/booktype")
-	bookType.Post("/insert", controllers.InsertBookType)
-	bookType.Get("/select/all", controllers.SelectAllBookTypes)
-	bookType.Get("/select/page", controllers.SelectPageBookTypes)
-	bookType.Get("/select/:id", controllers.SelectBookTypeByID)
-	bookType.Put("/update/:id", controllers.UpdateBookTypeByID)
-	bookType.Put("/delete/:id", controllers.DeleteBookTypeByID)
-	bookType.Delete("/remove/:id", controllers.RemoveBookTypeByID)
-
 	// Group สำหรับ Discount Type API [ver 1.5.5]
 	discountType := protected.Group("/discounttype")
 	discountType.Post("/insert", controllers.InsertDiscountType)
 	discountType.Get("/select/all", controllers.SelectAllDiscountType)
 	discountType.Get("/select/page", controllers.SelectPageDiscountType)
 	discountType.Get("/select/:id", controllers.SelectDiscountTypeByID)
+	discountType.Get("/select/name/:name", controllers.SelectDiscountTypeByName)
 	discountType.Put("/update/:id", controllers.UpdateDiscountTypeByID)
 	discountType.Put("/delete/:id", controllers.DeleteDiscountTypeByID)
 	discountType.Delete("/remove/:id", controllers.RemoveDiscountTypeByID)
@@ -126,16 +94,16 @@ func RegisterV1Routes(app *fiber.App, db *sql.DB) {
 	vendorType.Put("/delete/:id", controllers.DeleteVendorTypeByID)          // เปลี่ยน is_delete = 1
 	vendorType.Delete("/remove/:id", controllers.RemoveVendorTypeByID)       // ลบข้อมูลจริง
 
-	// Group สำหรับ Vendor API [ver 1.8.0]
-	vendor := protected.Group("/vendor")
-	vendor.Post("/insert", controllers.InsertVendor)                 // เพิ่ม Vendor
-	vendor.Get("/select/all", controllers.SelectAllVendor)           // ดึงข้อมูล Vendor ทั้งหมด
-	vendor.Get("/select/page", controllers.SelectPageVendor)         // ดึงข้อมูล Vendor แบบ Paging
-	vendor.Get("/select/:id", controllers.SelectVendorByID)          // ดึงข้อมูล Vendor ตาม ID
-	vendor.Get("/select/name/:name", controllers.SelectVendorByName) // ดึงข้อมูล Vendor ตาม Name
-	vendor.Put("/update/:id", controllers.UpdateVendorByID)          // อัปเดต Vendor ตาม ID
-	vendor.Put("/delete/:id", controllers.DeleteVendorByID)          // เปลี่ยน is_delete = 1
-	vendor.Delete("/remove/:id", controllers.RemoveVendorByID)       // ลบข้อมูลจริง
+	// Group สำหรับ Vendor API [ver 2.3.0]
+	vendorGroup := protected.Group("/vendor")
+	vendorGroup.Post("/insert", controllers.InsertVendor)
+	vendorGroup.Get("/select/all", controllers.SelectAllVendors)
+	vendorGroup.Get("/select/page", controllers.SelectPageVendors)
+	vendorGroup.Get("/select/:id", controllers.SelectVendorByID)
+	vendorGroup.Get("/select/name/:name", controllers.SelectVendorByName)
+	vendorGroup.Put("/update/:id", controllers.UpdateVendorByID)
+	vendorGroup.Put("/delete/:id", controllers.DeleteVendorByID)
+	vendorGroup.Delete("/remove/:id", controllers.RemoveVendorByID)
 
 	// Group สำหรับ Unit Type API [ver 1.7.3]
 	unitType := protected.Group("/unittype")
@@ -148,27 +116,27 @@ func RegisterV1Routes(app *fiber.App, db *sql.DB) {
 	unitType.Put("/delete/:id", controllers.DeleteUnitTypeByID)          // Soft Delete
 	unitType.Delete("/remove/:id", controllers.RemoveUnitTypeByID)       // ลบข้อมูลจริง
 
-	// Group สำหรับ Product Type API [ver 1.7.6]
-	productType := protected.Group("/producttype")
-	productType.Post("/insert", controllers.InsertProductType)                 // เพิ่ม Product Type
-	productType.Get("/select/all", controllers.SelectAllProductType)           // ดึงข้อมูล Product Type ทั้งหมด
-	productType.Get("/select/page", controllers.SelectPageProductType)         // ดึงข้อมูล Product Type แบบ Paging
-	productType.Get("/select/:id", controllers.SelectProductTypeByID)          // ดึงข้อมูล Product Type ตาม ID
-	productType.Get("/select/name/:name", controllers.SelectProductTypeByName) // ดึงข้อมูล Product Type ตาม Name
-	productType.Put("/update/:id", controllers.UpdateProductTypeByID)          // อัปเดต Product Type ตาม ID
-	productType.Put("/delete/:id", controllers.DeleteProductTypeByID)          // Soft Delete Product Type
-	productType.Delete("/remove/:id", controllers.RemoveProductTypeByID)       // ลบข้อมูล Product Type จริง
+	// Group สำหรับ Product Group API [ver 2.3.0]
+	productGroup := protected.Group("/productgroup")
+	productGroup.Post("/insert", controllers.InsertProductGroup)
+	productGroup.Get("/select/all", controllers.SelectAllProductGroup)
+	productGroup.Get("/select/page", controllers.SelectPageProductGroup)
+	productGroup.Get("/select/:id", controllers.SelectProductGroupByID)
+	productGroup.Get("/select/name/:name", controllers.SelectProductGroupByName)
+	productGroup.Put("/update/:id", controllers.UpdateProductGroupByID)
+	productGroup.Put("/delete/:id", controllers.DeleteProductGroupByID)
+	productGroup.Delete("/remove/:id", controllers.RemoveProductGroupByID)
 
-	// Group สำหรับ Product Type Group API [ver 1.7.9]
-	productTypeGroup := protected.Group("/producttypegroup")
-	productTypeGroup.Post("/insert", controllers.InsertProductTypeGroup)
-	productTypeGroup.Get("/select/all", controllers.SelectAllProductTypeGroup)
-	productTypeGroup.Get("/select/page", controllers.SelectPageProductTypeGroup)
-	productTypeGroup.Get("/select/:id", controllers.SelectProductTypeGroupByID)
-	productTypeGroup.Get("/select/name/:name", controllers.SelectProductTypeGroupByName)
-	productTypeGroup.Put("/update/:id", controllers.UpdateProductTypeGroupByID)
-	productTypeGroup.Put("/delete/:id", controllers.DeleteProductTypeGroupByID)
-	productTypeGroup.Delete("/remove/:id", controllers.RemoveProductTypeGroupByID)
+	// Group สำหรับ Product Category API [ver 1.8.3]
+	productCategory := protected.Group("/productcategory")
+	productCategory.Post("/insert", controllers.InsertProductCategory)
+	productCategory.Get("/select/all", controllers.SelectAllProductCategory)
+	productCategory.Get("/select/page", controllers.SelectPageProductCategory)
+	productCategory.Get("/select/:id", controllers.SelectProductCategoryByID)
+	productCategory.Get("/select/name/:name", controllers.SelectProductCategoryByName)
+	productCategory.Put("/update/:id", controllers.UpdateProductCategoryByID)
+	productCategory.Put("/delete/:id", controllers.DeleteProductCategoryByID)
+	productCategory.Delete("/remove/:id", controllers.RemoveProductCategoryByID)
 
 	// Group สำหรับ Product Format Type API [ver 1.8.1]
 	productFormatType := protected.Group("/productformattype")
@@ -203,5 +171,35 @@ func RegisterV1Routes(app *fiber.App, db *sql.DB) {
 	product.Put("/delete/:id", controllers.DeleteProductByID)          // Soft Delete
 	product.Delete("/remove/:id", controllers.RemoveProductByID)       // ลบข้อมูลจริง
 
+	// Group สำหรับ Warehouse API [ver 2.3.0]
+	warehouse := protected.Group("/warehouse")
+	warehouse.Post("/insert", controllers.InsertWarehouse)
+	warehouse.Get("/select/all", controllers.SelectAllWarehouse)
+	warehouse.Get("/select/page", controllers.SelectPageWarehouse)
+	warehouse.Get("/select/:id", controllers.SelectWarehouseByID)
+	warehouse.Get("/select/name/:name", controllers.SelectWarehouseByName)
+	warehouse.Put("/update/:id", controllers.UpdateWarehouseByID)
+	warehouse.Put("/delete/:id", controllers.DeleteWarehouseByID)
+	warehouse.Delete("/remove/:id", controllers.RemoveWarehouseByID)
+
+	// Group สำหรับ Receive API [ver 2.3.0]
+	receive := protected.Group("/receive")
+	receive.Post("/insert", controllers.InsertReceiveNote)
+	receive.Get("/select/all", controllers.SelectAllReceiveNotes)
+	receive.Get("/select/page", controllers.SelectPageReceiveNotes)
+	receive.Get("/select/:id", controllers.SelectReceiveNoteByID)
+	receive.Put("/update/:id", controllers.UpdateReceiveNoteByID)
+	receive.Put("/delete/:id", controllers.DeleteReceiveNoteByID)
+	receive.Delete("/remove/:id", controllers.RemoveReceiveNoteByID)
+
+	// Group สำหรับ Order API [ver 2.3.0]
+	order := protected.Group("/order")
+	order.Post("/insert", controllers.InsertOrder)
+	order.Get("/select/all", controllers.SelectAllOrders)
+	order.Get("/select/page", controllers.SelectPageOrders)
+	order.Get("/select/:id", controllers.SelectOrderByID)
+	order.Put("/update/:id", controllers.UpdateOrderByID)
+	order.Put("/delete/:id", controllers.DeleteOrderByID)
+	order.Delete("/remove/:id", controllers.RemoveOrderByID)
 
 }

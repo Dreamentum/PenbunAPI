@@ -12,8 +12,7 @@ import (
 
 func SelectAllDiscountType(c *fiber.Ctx) error {
 	query := `
-		SELECT discount_type_id, type_name, discount_unit_type, description,
-		       update_by, update_date, id_status
+		SELECT discount_type_id, discount_type_name, description, update_by, update_date, is_active
 		FROM tb_discount_type
 		WHERE is_delete = 0
 	`
@@ -30,11 +29,9 @@ func SelectAllDiscountType(c *fiber.Ctx) error {
 
 	var list []models.DiscountType
 	for rows.Next() {
-		var dt models.DiscountType
-		if err := rows.Scan(
-			&dt.DiscountTypeID, &dt.TypeName, &dt.DiscountUnitType,
-			&dt.Description, &dt.UpdateBy, &dt.UpdateDate, &dt.IDStatus,
-		); err != nil {
+		var item models.DiscountType
+		var upd sql.NullTime
+		if err := rows.Scan(&item.DiscountTypeID, &item.DiscountTypeName, &item.Description, &item.UpdateBy, &upd, &item.IsActive); err != nil {
 			log.Println(err)
 			return c.Status(500).JSON(models.ApiResponse{
 				Status:  "error",
@@ -42,7 +39,11 @@ func SelectAllDiscountType(c *fiber.Ctx) error {
 				Data:    nil,
 			})
 		}
-		list = append(list, dt)
+		if upd.Valid {
+			t := upd.Time.Format("2006-01-02T15:04:05")
+			item.UpdateDate = &t
+		}
+		list = append(list, item)
 	}
 
 	return c.JSON(models.ApiResponse{
@@ -58,8 +59,7 @@ func SelectPageDiscountType(c *fiber.Ctx) error {
 	offset := (page - 1) * limit
 
 	query := `
-		SELECT discount_type_id, type_name, discount_unit_type, description,
-		       update_by, update_date, id_status
+		SELECT discount_type_id, discount_type_name, description, update_by, update_date, is_active
 		FROM tb_discount_type
 		WHERE is_delete = 0
 		ORDER BY update_date DESC
@@ -78,11 +78,9 @@ func SelectPageDiscountType(c *fiber.Ctx) error {
 
 	var list []models.DiscountType
 	for rows.Next() {
-		var dt models.DiscountType
-		if err := rows.Scan(
-			&dt.DiscountTypeID, &dt.TypeName, &dt.DiscountUnitType,
-			&dt.Description, &dt.UpdateBy, &dt.UpdateDate, &dt.IDStatus,
-		); err != nil {
+		var item models.DiscountType
+		var upd sql.NullTime
+		if err := rows.Scan(&item.DiscountTypeID, &item.DiscountTypeName, &item.Description, &item.UpdateBy, &upd, &item.IsActive); err != nil {
 			log.Println(err)
 			return c.Status(500).JSON(models.ApiResponse{
 				Status:  "error",
@@ -90,7 +88,11 @@ func SelectPageDiscountType(c *fiber.Ctx) error {
 				Data:    nil,
 			})
 		}
-		list = append(list, dt)
+		if upd.Valid {
+			t := upd.Time.Format("2006-01-02T15:04:05")
+			item.UpdateDate = &t
+		}
+		list = append(list, item)
 	}
 
 	var total int
@@ -118,18 +120,15 @@ func SelectPageDiscountType(c *fiber.Ctx) error {
 func SelectDiscountTypeByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 	query := `
-		SELECT discount_type_id, type_name, discount_unit_type, description,
-		       update_by, update_date, id_status
+		SELECT discount_type_id, discount_type_name, description, update_by, update_date, is_active
 		FROM tb_discount_type
 		WHERE discount_type_id = @ID AND is_delete = 0
 	`
 	row := config.DB.QueryRow(query, sql.Named("ID", id))
 
-	var dt models.DiscountType
-	if err := row.Scan(
-		&dt.DiscountTypeID, &dt.TypeName, &dt.DiscountUnitType,
-		&dt.Description, &dt.UpdateBy, &dt.UpdateDate, &dt.IDStatus,
-	); err != nil {
+	var item models.DiscountType
+	var upd sql.NullTime
+	if err := row.Scan(&item.DiscountTypeID, &item.DiscountTypeName, &item.Description, &item.UpdateBy, &upd, &item.IsActive); err != nil {
 		if err == sql.ErrNoRows {
 			return c.Status(404).JSON(models.ApiResponse{
 				Status:  "error",
@@ -144,23 +143,25 @@ func SelectDiscountTypeByID(c *fiber.Ctx) error {
 			Data:    nil,
 		})
 	}
+	if upd.Valid {
+		t := upd.Time.Format("2006-01-02T15:04:05")
+		item.UpdateDate = &t
+	}
 
 	return c.JSON(models.ApiResponse{
 		Status:  "success",
 		Message: "",
-		Data:    dt,
+		Data:    item,
 	})
 }
 
 func SelectDiscountTypeByName(c *fiber.Ctx) error {
 	name := c.Params("name")
 	query := `
-		SELECT discount_type_id, type_name, discount_unit_type, description,
-		       update_by, update_date, id_status
+		SELECT discount_type_id, discount_type_name, description, update_by, update_date, is_active
 		FROM tb_discount_type
-		WHERE type_name LIKE '%' + @Name + '%' AND is_delete = 0
+		WHERE discount_type_name LIKE '%' + @Name + '%' AND is_delete = 0
 	`
-
 	rows, err := config.DB.Query(query, sql.Named("Name", name))
 	if err != nil {
 		log.Println(err)
@@ -174,11 +175,9 @@ func SelectDiscountTypeByName(c *fiber.Ctx) error {
 
 	var results []models.DiscountType
 	for rows.Next() {
-		var dt models.DiscountType
-		if err := rows.Scan(
-			&dt.DiscountTypeID, &dt.TypeName, &dt.DiscountUnitType,
-			&dt.Description, &dt.UpdateBy, &dt.UpdateDate, &dt.IDStatus,
-		); err != nil {
+		var item models.DiscountType
+		var upd sql.NullTime
+		if err := rows.Scan(&item.DiscountTypeID, &item.DiscountTypeName, &item.Description, &item.UpdateBy, &upd, &item.IsActive); err != nil {
 			log.Println(err)
 			return c.Status(500).JSON(models.ApiResponse{
 				Status:  "error",
@@ -186,7 +185,11 @@ func SelectDiscountTypeByName(c *fiber.Ctx) error {
 				Data:    nil,
 			})
 		}
-		results = append(results, dt)
+		if upd.Valid {
+			t := upd.Time.Format("2006-01-02T15:04:05")
+			item.UpdateDate = &t
+		}
+		results = append(results, item)
 	}
 
 	if len(results) == 0 {
@@ -205,26 +208,26 @@ func SelectDiscountTypeByName(c *fiber.Ctx) error {
 }
 
 func InsertDiscountType(c *fiber.Ctx) error {
-	var dt models.DiscountType
-	if err := c.BodyParser(&dt); err != nil {
+	var item models.DiscountType
+	if err := c.BodyParser(&item); err != nil {
 		return c.Status(400).JSON(models.ApiResponse{
 			Status:  "error",
-			Message: "Invalid request",
+			Message: "Invalid request body",
 			Data:    nil,
 		})
 	}
 
 	query := `
-		INSERT INTO tb_discount_type (type_name, discount_unit_type, description, update_by)
-		VALUES (@TypeName, @UnitType, @Description, @UpdateBy)
+		INSERT INTO tb_discount_type (discount_type_name, description, update_by)
+		VALUES (@DiscountTypeName, @Description, @UpdateBy)
 	`
+
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
 			_, err := tx.Exec(query,
-				sql.Named("TypeName", dt.TypeName),
-				sql.Named("UnitType", dt.DiscountUnitType),
-				sql.Named("Description", dt.Description),
-				sql.Named("UpdateBy", dt.UpdateBy),
+				sql.Named("DiscountTypeName", item.DiscountTypeName),
+				sql.Named("Description", item.Description),
+				sql.Named("UpdateBy", item.UpdateBy),
 			)
 			return err
 		},
@@ -237,6 +240,7 @@ func InsertDiscountType(c *fiber.Ctx) error {
 			Data:    nil,
 		})
 	}
+
 	return c.Status(201).JSON(models.ApiResponse{
 		Status:  "success",
 		Message: "Discount type added successfully",
@@ -246,8 +250,8 @@ func InsertDiscountType(c *fiber.Ctx) error {
 
 func UpdateDiscountTypeByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	var dt models.DiscountType
-	if err := c.BodyParser(&dt); err != nil {
+	var item models.DiscountType
+	if err := c.BodyParser(&item); err != nil {
 		return c.Status(400).JSON(models.ApiResponse{
 			Status:  "error",
 			Message: "Invalid request body",
@@ -257,24 +261,42 @@ func UpdateDiscountTypeByID(c *fiber.Ctx) error {
 
 	query := `
 		UPDATE tb_discount_type
-		SET type_name = COALESCE(NULLIF(@TypeName, ''), type_name),
-			discount_unit_type = COALESCE(NULLIF(@UnitType, ''), discount_unit_type),
-			description = @Description,
-			update_by = @UpdateBy
+		SET discount_type_name = COALESCE(NULLIF(@DiscountTypeName, ''), discount_type_name),
+			description = COALESCE(@Description, description),
+			update_by = @UpdateBy,
+			is_active = COALESCE(@IsActive, is_active)
 		WHERE discount_type_id = @ID AND is_delete = 0
 	`
+
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
-			_, err := tx.Exec(query,
-				sql.Named("TypeName", dt.TypeName),
-				sql.Named("UnitType", dt.DiscountUnitType),
-				sql.Named("Description", dt.Description),
-				sql.Named("UpdateBy", dt.UpdateBy),
+			res, err := tx.Exec(query,
+				sql.Named("DiscountTypeName", item.DiscountTypeName),
+				sql.Named("Description", item.Description),
+				sql.Named("UpdateBy", item.UpdateBy),
+				sql.Named("IsActive", item.IsActive),
 				sql.Named("ID", id),
 			)
-			return err
+			if err != nil {
+				return err
+			}
+			rows, err := res.RowsAffected()
+			if err != nil {
+				return err
+			}
+			if rows == 0 {
+				return sql.ErrNoRows
+			}
+			return nil
 		},
 	})
+	if err == sql.ErrNoRows {
+		return c.Status(404).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Discount type not found",
+			Data:    nil,
+		})
+	}
 	if err != nil {
 		log.Println(err)
 		return c.Status(500).JSON(models.ApiResponse{
@@ -283,6 +305,7 @@ func UpdateDiscountTypeByID(c *fiber.Ctx) error {
 			Data:    nil,
 		})
 	}
+
 	return c.JSON(models.ApiResponse{
 		Status:  "success",
 		Message: "Discount type updated successfully",
@@ -295,26 +318,44 @@ func DeleteDiscountTypeByID(c *fiber.Ctx) error {
 	query := `
 		UPDATE tb_discount_type
 		SET is_delete = 1,
+			is_active = 0,
 			update_date = CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'SE Asia Standard Time' AS DATETIME)
-		WHERE discount_type_id = @ID
+		WHERE discount_type_id = @ID AND is_delete = 0
 	`
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
-			_, err := tx.Exec(query, sql.Named("ID", id))
-			return err
+			res, err := tx.Exec(query, sql.Named("ID", id))
+			if err != nil {
+				return err
+			}
+			rows, err := res.RowsAffected()
+			if err != nil {
+				return err
+			}
+			if rows == 0 {
+				return sql.ErrNoRows
+			}
+			return nil
 		},
 	})
+	if err == sql.ErrNoRows {
+		return c.Status(404).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Discount type not found",
+			Data:    nil,
+		})
+	}
 	if err != nil {
 		log.Println(err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
-			Message: "Failed to soft delete discount type",
+			Message: "Failed to delete discount type",
 			Data:    nil,
 		})
 	}
 	return c.JSON(models.ApiResponse{
 		Status:  "success",
-		Message: "Discount type marked as deleted",
+		Message: "Discount type deleted successfully",
 		Data:    nil,
 	})
 }
@@ -324,15 +365,32 @@ func RemoveDiscountTypeByID(c *fiber.Ctx) error {
 	query := `DELETE FROM tb_discount_type WHERE discount_type_id = @ID`
 	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
 		func(tx *sql.Tx) error {
-			_, err := tx.Exec(query, sql.Named("ID", id))
-			return err
+			res, err := tx.Exec(query, sql.Named("ID", id))
+			if err != nil {
+				return err
+			}
+			rows, err := res.RowsAffected()
+			if err != nil {
+				return err
+			}
+			if rows == 0 {
+				return sql.ErrNoRows
+			}
+			return nil
 		},
 	})
+	if err == sql.ErrNoRows {
+		return c.Status(404).JSON(models.ApiResponse{
+			Status:  "error",
+			Message: "Discount type not found",
+			Data:    nil,
+		})
+	}
 	if err != nil {
 		log.Println(err)
 		return c.Status(500).JSON(models.ApiResponse{
 			Status:  "error",
-			Message: "Failed to hard delete discount type",
+			Message: "Failed to remove discount type",
 			Data:    nil,
 		})
 	}
