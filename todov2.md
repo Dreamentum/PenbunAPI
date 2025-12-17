@@ -31,8 +31,10 @@
 - [x] **Customer Type API** (`tb_customer_type`)
     - *Action:* ตรวจสอบว่ารองรับ `base_credit_day` หรือยัง
 - [x] **Discount Type API** (`tb_discount_type`)
-- [ ] **Product Category API** (`tb_product_category`)
-    - *Status:* **ของใหม่** (ต้องสร้างเพิ่มสำหรับ v2.1)
+- [x] **Product Category API** (`tb_product_category`)
+    - *Status:* ✅ **Completed**
+- [x] **Warehouse API** (`tb_warehouse`)
+    - *Status:* ✅ **Completed**
 
 ---
 
@@ -48,8 +50,8 @@
 - [x] **Discount API** (`tb_discount`)
     - *Status:* ✅ **Completed**
     - *Task:* ปรับให้รองรับ Logic ใหม่ (`is_percent`, `min_order_amount`, `start/end date`)
-- [ ] **Product Group API** (`tb_product_group`)
-    - *Status:* **ของใหม่** (แทนที่ Product Type เดิม หรือ Refactor ของเดิมมาใช้)
+- [x] **Product Group API** (`tb_product_group`)
+    - *Status:* ✅ **Completed**
 
 ---
 

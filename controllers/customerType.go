@@ -112,7 +112,7 @@ func SelectPageCustomerTypes(c *fiber.Ctx) error {
 			"page":         page,
 			"limit":        limit,
 			"total":        total,
-			"customerType": list,
+			"items":        list,
 		},
 	})
 }

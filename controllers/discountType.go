@@ -112,7 +112,7 @@ func SelectPageDiscountType(c *fiber.Ctx) error {
 			"page":         page,
 			"limit":        limit,
 			"total":        total,
-			"discountType": list,
+			"items":        list,
 		},
 	})
 }
