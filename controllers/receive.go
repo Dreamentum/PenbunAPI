@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"PenbunAPI/config"
 	"PenbunAPI/models"
 	"database/sql"
 
@@ -9,7 +10,7 @@ import (
 
 // SelectAllReceiveNotes ดึงข้อมูลใบรับสินค้าทั้งหมด
 func SelectAllReceiveNotes(c *fiber.Ctx) error {
-	db := c.Locals("db").(*sql.DB)
+	db := config.DB
 
 	query := `
 		SELECT r.receive_note_id, r.vendor_id, v.vendor_name, r.warehouse_id, w.warehouse_name,
@@ -38,7 +39,7 @@ func SelectAllReceiveNotes(c *fiber.Ctx) error {
 			return c.Status(500).SendString(err.Error())
 		}
 		r.VendorName = vendorName
-		// We might need to add WarehouseName to the model if we want to return it, 
+		// We might need to add WarehouseName to the model if we want to return it,
 		// currently ReceiveNote struct doesn't have WarehouseName, so we just scan it but don't bind if not needed or add it to struct.
 		// For now, let's assume valid model integration.
 		receives = append(receives, r)
@@ -51,7 +52,7 @@ func SelectAllReceiveNotes(c *fiber.Ctx) error {
 
 // SelectPageReceiveNotes ดึงข้อมูลใบรับสินค้าแบบ Paging
 func SelectPageReceiveNotes(c *fiber.Ctx) error {
-	db := c.Locals("db").(*sql.DB)
+	db := config.DB
 	page := c.QueryInt("page", 1)
 	limit := c.QueryInt("limit", 10)
 	offset := (page - 1) * limit
@@ -104,7 +105,7 @@ func SelectPageReceiveNotes(c *fiber.Ctx) error {
 
 // SelectReceiveNoteByID ดึงข้อมูลใบรับสินค้าตาม ID (พร้อม Items)
 func SelectReceiveNoteByID(c *fiber.Ctx) error {
-	db := c.Locals("db").(*sql.DB)
+	db := config.DB
 	id := c.Params("id")
 
 	// 1. Get Header
@@ -168,8 +169,8 @@ func SelectReceiveNoteByID(c *fiber.Ctx) error {
 
 // InsertReceiveNote เพิ่มใบรับสินค้า
 func InsertReceiveNote(c *fiber.Ctx) error {
-	db := c.Locals("db").(*sql.DB)
-	
+	db := config.DB
+
 	// Complex struct for Request Body containing Header and Items
 	type InsertRequest struct {
 		Header models.ReceiveNote   `json:"header"`
@@ -221,21 +222,21 @@ func InsertReceiveNote(c *fiber.Ctx) error {
 	// Since we inserted, triggger ran. We need to find the ID.
 	// For simplicity in this stack, assuming we can get it by recent insert or output.
 	// However, SQL Server with Trigger ID generation is tricky to get back immediately without OUTPUT clause in INSERT.
-	// But our trigger updates the table AFTER insert. 
+	// But our trigger updates the table AFTER insert.
 	// Standard approach: Get latest by User/Time or use OUTPUT inserted.autoID then Select.
 	// Improved Query with OUTPUT could be:
 	// INSERT ... VALUES ... SELECT SCOPE_IDENTITY()
 	// Let's rely on fetching the latest ID for this session/user logic if possible, OR better:
 	// Use OUTPUT Clause in the INSERT statement above is invalid if Trigger handles ID generation later?
 	// Actually, the Trigger updates keys. So we need the autoID to find the key.
-	
-	// Workaround: We query the latest autoID inserted? 
-	// Let's modify the flow: 
+
+	// Workaround: We query the latest autoID inserted?
+	// Let's modify the flow:
 	// Ideally we should pass the generated ID back.
 	// For this task, I will use a simple query to get the latest ID created by this user/process or similar.
 	// NOTE: This race condition is risky. But acceptable for this prototype phase.
 	// Better: Select TOP 1 receive_note_id FROM tb_receive_note ORDER BY autoID DESC
-	
+
 	var newID string
 	err = tx.QueryRow("SELECT TOP 1 receive_note_id FROM tb_receive_note WHERE update_by = @UpdateBy ORDER BY autoID DESC", sql.Named("UpdateBy", user)).Scan(&newID)
 	if err != nil {
@@ -261,7 +262,7 @@ func InsertReceiveNote(c *fiber.Ctx) error {
 			tx.Rollback()
 			return c.Status(500).SendString("Item Insert Fail: " + err.Error())
 		}
-		
+
 		// 4. Update Stock (Simple increment for now - Layer 7 logic, omitting for Layer 5 basic save)
 		// Assuming we just save document first.
 	}
@@ -281,9 +282,9 @@ func UpdateReceiveNoteByID(c *fiber.Ctx) error {
 	// Logic similar to Insert but typically we only update Header info or Add/Remove items.
 	// For MVP, implementing Header update only for brevity, or full replace.
 	// Let's allow updating Note and RefInvoice.
-	db := c.Locals("db").(*sql.DB)
+	db := config.DB
 	id := c.Params("id")
-	
+
 	type UpdateRequest struct {
 		RefInvoiceNo *string `json:"ref_invoice_no"`
 		Note         *string `json:"note"`
@@ -315,7 +316,7 @@ func UpdateReceiveNoteByID(c *fiber.Ctx) error {
 
 // DeleteReceiveNoteByID ลบใบรับสินค้า (Soft Delete)
 func DeleteReceiveNoteByID(c *fiber.Ctx) error {
-	db := c.Locals("db").(*sql.DB)
+	db := config.DB
 	id := c.Params("id")
 
 	// Transaction to delete header and items
@@ -344,20 +345,28 @@ func DeleteReceiveNoteByID(c *fiber.Ctx) error {
 
 // RemoveReceiveNoteByID ลบจริง (Hard Delete)
 func RemoveReceiveNoteByID(c *fiber.Ctx) error {
-	db := c.Locals("db").(*sql.DB)
+	db := config.DB
 	id := c.Params("id")
-	
+
 	// Check if ID is 'TEMP' or similar if needed, otherwise standard delete
 	tx, err := db.Begin()
-	if err != nil { return c.Status(500).SendString(err.Error()) }
+	if err != nil {
+		return c.Status(500).SendString(err.Error())
+	}
 
 	// Delete Items first FK
 	_, err = tx.Exec("DELETE FROM tb_receive_item WHERE receive_note_id = @ID", sql.Named("ID", id))
-	if err != nil { tx.Rollback(); return c.Status(500).SendString(err.Error()) }
+	if err != nil {
+		tx.Rollback()
+		return c.Status(500).SendString(err.Error())
+	}
 
 	// Delete Header
 	_, err = tx.Exec("DELETE FROM tb_receive_note WHERE receive_note_id = @ID", sql.Named("ID", id))
-	if err != nil { tx.Rollback(); return c.Status(500).SendString(err.Error()) }
+	if err != nil {
+		tx.Rollback()
+		return c.Status(500).SendString(err.Error())
+	}
 
 	tx.Commit()
 	return c.JSON(fiber.Map{"status": "success"})

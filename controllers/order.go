@@ -1,15 +1,16 @@
 package controllers
 
 import (
+	"PenbunAPI/config"
 	"PenbunAPI/models"
 	"database/sql"
-	
+
 	"github.com/gofiber/fiber/v2"
 )
 
 // SelectAllOrders ดึงข้อมูลใบสั่งขายทั้งหมด
 func SelectAllOrders(c *fiber.Ctx) error {
-	db := c.Locals("db").(*sql.DB)
+	db := config.DB
 
 	query := `
 		SELECT o.order_id, o.customer_id, c.customer_name, o.warehouse_id, w.warehouse_name,
@@ -46,7 +47,7 @@ func SelectAllOrders(c *fiber.Ctx) error {
 
 // SelectPageOrders ดึงข้อมูลใบสั่งขายแบบ Paging
 func SelectPageOrders(c *fiber.Ctx) error {
-	db := c.Locals("db").(*sql.DB)
+	db := config.DB
 	page := c.QueryInt("page", 1)
 	limit := c.QueryInt("limit", 10)
 	offset := (page - 1) * limit
@@ -98,7 +99,7 @@ func SelectPageOrders(c *fiber.Ctx) error {
 
 // SelectOrderByID ดึงข้อมูลใบสั่งขายตาม ID
 func SelectOrderByID(c *fiber.Ctx) error {
-	db := c.Locals("db").(*sql.DB)
+	db := config.DB
 	id := c.Params("id")
 
 	// 1. Header
@@ -134,7 +135,9 @@ func SelectOrderByID(c *fiber.Ctx) error {
 		WHERE oi.order_id = @ID AND oi.is_delete = 0
 	`
 	rows, err := db.Query(queryItems, sql.Named("ID", id))
-	if err != nil { return c.Status(500).SendString(err.Error()) }
+	if err != nil {
+		return c.Status(500).SendString(err.Error())
+	}
 	defer rows.Close()
 
 	var items []models.OrderItem
@@ -154,10 +157,10 @@ func SelectOrderByID(c *fiber.Ctx) error {
 
 // InsertOrder เพิ่มใบสั่งขาย
 func InsertOrder(c *fiber.Ctx) error {
-	db := c.Locals("db").(*sql.DB)
-	
+	db := config.DB
+
 	type InsertRequest struct {
-		Header models.Order      `json:"header"`
+		Header models.Order       `json:"header"`
 		Items  []models.OrderItem `json:"items"`
 	}
 
@@ -167,7 +170,9 @@ func InsertOrder(c *fiber.Ctx) error {
 	}
 
 	tx, err := db.Begin()
-	if err != nil { return c.Status(500).SendString(err.Error()) }
+	if err != nil {
+		return c.Status(500).SendString(err.Error())
+	}
 
 	user := "System" // Or from auth
 
@@ -195,12 +200,18 @@ func InsertOrder(c *fiber.Ctx) error {
 		sql.Named("Grand", req.Header.GrandTotal),
 		sql.Named("UpdateBy", user),
 	)
-	if err != nil { tx.Rollback(); return c.Status(500).SendString("Insert Header Fail: "+err.Error()) }
+	if err != nil {
+		tx.Rollback()
+		return c.Status(500).SendString("Insert Header Fail: " + err.Error())
+	}
 
 	// 2. Fetch ID
 	var newID string
 	err = tx.QueryRow("SELECT TOP 1 order_id FROM tb_order WHERE update_by = @UpdateBy ORDER BY autoID DESC", sql.Named("UpdateBy", user)).Scan(&newID)
-	if err != nil { tx.Rollback(); return c.Status(500).SendString("Fetch ID Fail: "+err.Error()) }
+	if err != nil {
+		tx.Rollback()
+		return c.Status(500).SendString("Fetch ID Fail: " + err.Error())
+	}
 
 	// 3. Items
 	queryItem := `
@@ -217,10 +228,15 @@ func InsertOrder(c *fiber.Ctx) error {
 			sql.Named("Total", item.LineTotal),
 			sql.Named("Remark", item.Remark),
 		)
-		if err != nil { tx.Rollback(); return c.Status(500).SendString("Insert Item Fail: "+err.Error()) }
+		if err != nil {
+			tx.Rollback()
+			return c.Status(500).SendString("Insert Item Fail: " + err.Error())
+		}
 	}
 
-	if err := tx.Commit(); err != nil { return c.Status(500).SendString("Commit Fail: "+err.Error()) }
+	if err := tx.Commit(); err != nil {
+		return c.Status(500).SendString("Commit Fail: " + err.Error())
+	}
 
 	return c.JSON(fiber.Map{"status": "success", "id": newID})
 }
@@ -232,19 +248,27 @@ func UpdateOrderByID(c *fiber.Ctx) error {
 
 // DeleteOrderByID (Soft)
 func DeleteOrderByID(c *fiber.Ctx) error {
-	db := c.Locals("db").(*sql.DB)
+	db := config.DB
 	id := c.Params("id")
-	
+
 	tx, err := db.Begin()
-	if err != nil { return c.Status(500).SendString(err.Error()) }
+	if err != nil {
+		return c.Status(500).SendString(err.Error())
+	}
 
 	// Header
 	_, err = tx.Exec(`UPDATE tb_order SET is_delete = 1, is_active = 0 WHERE order_id = @ID`, sql.Named("ID", id))
-	if err != nil { tx.Rollback(); return c.Status(500).SendString(err.Error()) }
+	if err != nil {
+		tx.Rollback()
+		return c.Status(500).SendString(err.Error())
+	}
 
 	// Items
 	_, err = tx.Exec(`UPDATE tb_order_item SET is_delete = 1 WHERE order_id = @ID`, sql.Named("ID", id))
-	if err != nil { tx.Rollback(); return c.Status(500).SendString(err.Error()) }
+	if err != nil {
+		tx.Rollback()
+		return c.Status(500).SendString(err.Error())
+	}
 
 	tx.Commit()
 	return c.JSON(fiber.Map{"status": "success"})
@@ -252,19 +276,27 @@ func DeleteOrderByID(c *fiber.Ctx) error {
 
 // RemoveOrderByID (Hard)
 func RemoveOrderByID(c *fiber.Ctx) error {
-	db := c.Locals("db").(*sql.DB)
+	db := config.DB
 	id := c.Params("id")
-	
+
 	tx, err := db.Begin()
-	if err != nil { return c.Status(500).SendString(err.Error()) }
+	if err != nil {
+		return c.Status(500).SendString(err.Error())
+	}
 
 	// Items first
 	_, err = tx.Exec("DELETE FROM tb_order_item WHERE order_id = @ID", sql.Named("ID", id))
-	if err != nil { tx.Rollback(); return c.Status(500).SendString(err.Error()) }
+	if err != nil {
+		tx.Rollback()
+		return c.Status(500).SendString(err.Error())
+	}
 
 	// Header
 	_, err = tx.Exec("DELETE FROM tb_order WHERE order_id = @ID", sql.Named("ID", id))
-	if err != nil { tx.Rollback(); return c.Status(500).SendString(err.Error()) }
+	if err != nil {
+		tx.Rollback()
+		return c.Status(500).SendString(err.Error())
+	}
 
 	tx.Commit()
 	return c.JSON(fiber.Map{"status": "success"})

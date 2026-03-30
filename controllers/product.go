@@ -62,7 +62,7 @@ func SelectPageProducts(c *fiber.Ctx) error {
 		SELECT autoID, prefix, product_id, product_name_th, product_name_en,
 		       product_type_id, format_type_id, vendor_id, unit_type_id,
 		       isbn, author_name, publisher_date, edition_number,
-		       price, cost, description, note,
+		       price, cost, description,
 		       count_stock, is_active, is_delete, update_by, update_date
 		FROM tb_product
 		WHERE is_delete = 0
@@ -121,7 +121,7 @@ func SelectProductByID(c *fiber.Ctx) error {
 		SELECT autoID, prefix, product_id, product_name_th, product_name_en,
 		       product_type_id, format_type_id, vendor_id, unit_type_id,
 		       isbn, author_name, publisher_date, edition_number,
-		       price, cost, description, note,
+		       price, cost, description,
 		       count_stock, is_active, is_delete, update_by, update_date
 		FROM tb_product
 		WHERE product_id = @ID AND is_delete = 0
@@ -132,7 +132,7 @@ func SelectProductByID(c *fiber.Ctx) error {
 		&p.AutoID, &p.Prefix, &p.ProductID, &p.ProductNameTH, &p.ProductNameEN,
 		&p.ProductTypeID, &p.FormatTypeID, &p.VendorID, &p.UnitTypeID,
 		&p.ISBN, &p.AuthorName, &p.PublisherDate, &p.EditionNumber,
-		&p.Price, &p.Cost, &p.Description, &p.Note,
+		&p.Price, &p.Cost, &p.Description,
 		&p.CountStock, &p.IsActive, &p.IsDelete, &p.UpdateBy, &p.UpdateDate,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -157,7 +157,7 @@ func SelectProductByName(c *fiber.Ctx) error {
 		SELECT autoID, prefix, product_id, product_name_th, product_name_en,
 		       product_type_id, format_type_id, vendor_id, unit_type_id,
 		       isbn, author_name, publisher_date, edition_number,
-		       price, cost, description, note,
+		       price, cost, description,
 		       count_stock, is_active, is_delete, update_by, update_date
 		FROM tb_product
 		WHERE (product_name_th LIKE '%' + @Name + '%' OR product_name_en LIKE '%' + @Name + '%') AND is_delete = 0
@@ -178,7 +178,7 @@ func SelectProductByName(c *fiber.Ctx) error {
 			&p.AutoID, &p.Prefix, &p.ProductID, &p.ProductNameTH, &p.ProductNameEN,
 			&p.ProductTypeID, &p.FormatTypeID, &p.VendorID, &p.UnitTypeID,
 			&p.ISBN, &p.AuthorName, &p.PublisherDate, &p.EditionNumber,
-			&p.Price, &p.Cost, &p.Description, &p.Note,
+			&p.Price, &p.Cost, &p.Description,
 			&p.CountStock, &p.IsActive, &p.IsDelete, &p.UpdateBy, &p.UpdateDate,
 		); err != nil {
 			log.Println(err)
@@ -210,14 +210,14 @@ func InsertProduct(c *fiber.Ctx) error {
 			product_id, product_name_th, product_name_en,
 			product_type_id, format_type_id, vendor_id, unit_type_id,
 			isbn, author_name, publisher_date, edition_number,
-			price, cost, description, note,
+			price, cost, description,
 			count_stock, update_by
 		)
 		VALUES (
 			@ProductID, @NameTH, @NameEN,
 			@TypeID, @FormatID, @VendorID, @UnitID,
 			@ISBN, @Author, @PubDate, @Edition,
-			@Price, @Cost, @Desc, @Note,
+			@Price, @Cost, @Desc,
 			@CountStock, @UpdateBy
 		)
 	`
@@ -238,7 +238,6 @@ func InsertProduct(c *fiber.Ctx) error {
 				sql.Named("Price", p.Price),
 				sql.Named("Cost", p.Cost),
 				sql.Named("Desc", p.Description),
-				sql.Named("Note", p.Note),
 				sql.Named("CountStock", p.CountStock),
 				sql.Named("UpdateBy", p.UpdateBy),
 			)
@@ -281,7 +280,6 @@ func UpdateProductByID(c *fiber.Ctx) error {
 			price = @Price,
 			cost = @Cost,
 			description = @Desc,
-			note = @Note,
 			count_stock = @CountStock,
 			update_by = @UpdateBy
 		WHERE product_id = @ID AND is_delete = 0
@@ -302,7 +300,6 @@ func UpdateProductByID(c *fiber.Ctx) error {
 				sql.Named("Price", p.Price),
 				sql.Named("Cost", p.Cost),
 				sql.Named("Desc", p.Description),
-				sql.Named("Note", p.Note),
 				sql.Named("CountStock", p.CountStock),
 				sql.Named("UpdateBy", p.UpdateBy),
 				sql.Named("ID", id),
