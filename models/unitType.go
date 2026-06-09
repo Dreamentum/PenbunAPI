@@ -1,10 +1,12 @@
 package models
 
 type UnitType struct {
-	UnitTypeID   string `json:"unit_type_id"`
-	UnitTypeName string `json:"unit_type_name"`
-	Description  string `json:"description"`
-	UpdateBy     string `json:"update_by"`
-	UpdateDate   string `json:"update_date"`
-	IsActive     *bool  `json:"is_active,omitempty"`
+	AutoID     int     `json:"auto_id"`
+	UnitTypeID string  `json:"unit_type_id"`
+	TypeName   string  `json:"type_name"`
+	Description *string `json:"description,omitempty"`
+	IsActive bool `json:"is_active"`
+	UpdateBy   string  `json:"update_by"`
+	UpdateDate string  `json:"update_date"`
+	IsDelete   bool    `json:"is_delete"`
 }

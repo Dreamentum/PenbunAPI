@@ -5,111 +5,71 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"runtime"
 	"syscall"
 	"time"
 
-	"PenbunAPI/config"
-	"PenbunAPI/middleware"
-	"PenbunAPI/routes"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-
+	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/joho/godotenv"
+
+	"PenbunAPI/config"
+	"PenbunAPI/routes"
 )
 
-func init() {
-	// โหลดไฟล์ .env
-	if err := godotenv.Load(); err != nil {
-		log.Println("Warning: Error loading .env file")
-	}
-}
-
-func cleanUp() {
-	fmt.Println("Cleaning Up..")
-	for {
-		// deletes old files here
-		time.Sleep(60 * time.Second)
-	}
-}
-
 func main() {
-	// 4 procs/childs max
-	runtime.GOMAXPROCS(3)
-
-	// start a cleanup cron-job
-	go cleanUp()
-
-	// เริ่มต้น Logger
-	config.InitLogger()
-
-	// อ่าน PORT จากไฟล์ .env
-	port := os.Getenv("FIBER_PORT")
-	if port == "" {
-		port = "8089" // default if no port in .env
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using system environment variables")
 	}
 
-	// สร้าง Fiber App
+	config.LoadEnv()
+	config.ConnectDB(config.Cfg)
+	config.InitLogger(config.Cfg)
+
 	app := fiber.New(fiber.Config{
-		Prefork:           false,
-		CaseSensitive:     true,
-		StrictRouting:     true,
-		EnablePrintRoutes: true,
-		ServerHeader:      "Fiber",
-		AppName:           "PENBUN API v2.1.0",
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 30 * time.Second,
 	})
 
-	// ✅ Serve favicon.ico
-	// app.Get("/favicon.ico", func(c *fiber.Ctx) error {
-	// 	return c.SendStatus(fiber.StatusNoContent) // หรือใช้ StatusOK ก็ได้
-	// })
-
-	// ใช้ JWTMiddleware ระดับ Global
-	// app.Use(middleware.JWTMiddleware(os.Getenv("JWT_SECRET")))
-	// log.Println("[DEBUG] JWT is :", token)
-
-	// เพิ่ม CORS Middleware
+	app.Use(recover.New())
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "*",                                                  // อนุญาตทุก origin
-		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",                        // อนุญาต methods
-		AllowHeaders:     "Origin,Content-Type,Accept,Authorization",           // อนุญาต headers
+		AllowOrigins: "*",
+		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
+		AllowHeaders: "Authorization,Content-Type",
 	}))
 
-	// เพิ่ม Logger Middleware
-	app.Use(middleware.NewLoggerMiddleware())
+	routes.SetupPublicRoutes(app, config.Cfg.JWTSecret)
+	routes.SetupV1Routes(app, config.Cfg.JWTSecret)
+	routes.SetupV2Routes(app)
 
-	config.ConnectDatabase()
+	fmt.Println("========== Registered Routes ==========")
+	for _, r := range app.GetRoutes() {
+		if r.Method != "" && r.Path != "" {
+			fmt.Printf("  %-6s %s\n", r.Method, r.Path)
+		}
+	}
+	fmt.Println("======================================")
 
-	// ลงทะเบียน Routes พร้อมส่ง Database Connection
-	routes.RegisterV1Routes(app, config.DB)
-
-	// routes.RegisterV2Routes(app, config.DB)
-
-	// เริ่มเซิร์ฟเวอร์
-	log.Println("Starting server on port", port)
-	log.Fatal(app.Listen(":" + port))
-
-	// จัดการ Graceful Shutdown
 	go func() {
-		if err := app.Listen(":" + port); err != nil {
-			log.Printf("Error starting server: %v\n", err)
+		addr := ":" + config.Cfg.FiberPort
+		log.Printf("PenbunAPI server starting on %s", addr)
+		if err := app.Listen(addr); err != nil {
+			log.Fatalf("Server failed to start: %v", err)
 		}
 	}()
 
-	// รอรับสัญญาณ Interrupt หรือ Kill
 	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
-
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	fmt.Println("Gracefully shutting down...")
 
-	// รอให้ Fiber Shutdown อย่างปลอดภัย
+	log.Println("Shutting down server gracefully...")
 	if err := app.Shutdown(); err != nil {
-		fmt.Printf("Error shutting down server: %v\n", err)
+		log.Fatalf("Server shutdown failed: %v", err)
 	}
 
-	// ปิดฐานข้อมูลหรือกระบวนการที่ค้างอยู่
-	config.DB.Close()
-	fmt.Println("Cleanup completed.")
+	if config.LogFile != nil {
+		config.LogFile.Close()
+	}
+
+	log.Println("Server exited")
 }

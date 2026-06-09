@@ -1,73 +1,71 @@
-// utils/tx.go
 package utils
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
-	"os"
-	"path/filepath"
 	"time"
+
+	"PenbunAPI/config"
 )
 
-var txLogger *log.Logger
-
-func init() {
-	// Determine the transaction log path. Prefer TRANSACTION_LOG_FILE, then LOG_FILE, then a repo default.
-	logFile := os.Getenv("TRANSACTION_LOG_FILE")
-	if logFile == "" {
-		logFile = os.Getenv("LOG_FILE")
-	}
-	if logFile == "" {
-		logFile = "logs/transaction.log"
-	}
-
-	// Ensure the directory exists (create it if needed)
-	dir := filepath.Dir(logFile)
-	if dir != "." && dir != "/" && dir != "" {
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			log.Printf("[WARN] failed creating transaction log directory %s: %v", dir, err)
-		}
-	}
-
-	f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		// ถ้าเปิดไม่ได้ ให้ fallback ไป stdout แต่ไม่ทำให้แอปดับ
-		log.Printf("[WARN] open transaction log failed: %v", err)
-		txLogger = log.New(os.Stdout, "", log.LstdFlags)
-	} else {
-		txLogger = log.New(f, "", log.LstdFlags)
-	}
+type TransactionStep struct {
+	Name      string
+	Query     string
+	Args      []interface{}
+	RowsAffected int64
 }
 
-func ExecuteTransaction(db *sql.DB, steps []func(tx *sql.Tx) error) error {
-	start := time.Now()
-	tx, err := db.Begin()
+func ExecuteTransaction(steps []TransactionStep) error {
+	tx, err := config.DB.Begin()
 	if err != nil {
-		txLogger.Printf("[BEGIN][ERR] %v", err)
-		return err
+		return fmt.Errorf("begin transaction: %w", err)
 	}
 
+	start := time.Now()
+	config.TransactionLogger.Printf("TX START | steps=%d", len(steps))
+
 	defer func() {
-		if p := recover(); p != nil {
-			_ = tx.Rollback()
-			txLogger.Printf("[PANIC][ROLLBACK] %v", p)
-			panic(p)
+		if r := recover(); r != nil {
+			tx.Rollback()
+			config.TransactionLogger.Printf("TX ROLLBACK (panic) | duration=%v | panic=%v", time.Since(start), r)
+			log.Printf("Transaction panic recovered: %v", r)
 		}
 	}()
 
 	for i, step := range steps {
-		if err := step(tx); err != nil {
-			_ = tx.Rollback()
-			txLogger.Printf("[ROLLBACK] step=%d err=%v elapsed=%s", i+1, err, time.Since(start))
-			return err
+		stepStart := time.Now()
+
+		result, err := tx.Exec(step.Query, step.Args...)
+		if err != nil {
+			tx.Rollback()
+			config.TransactionLogger.Printf("TX ROLLBACK | step=%d/%d name=%s duration=%v error=%s",
+				i+1, len(steps), step.Name, time.Since(stepStart), err)
+			return fmt.Errorf("step %d (%s): %w", i+1, step.Name, err)
 		}
+
+		affected, _ := result.RowsAffected()
+		steps[i].RowsAffected = affected
+
+		config.TransactionLogger.Printf("TX STEP OK | step=%d/%d name=%s duration=%v rows=%d",
+			i+1, len(steps), step.Name, time.Since(stepStart), affected)
 	}
 
 	if err := tx.Commit(); err != nil {
-		txLogger.Printf("[COMMIT][ERR] %v elapsed=%s", err, time.Since(start))
-		return err
+		config.TransactionLogger.Printf("TX COMMIT FAIL | duration=%v error=%s", time.Since(start), err)
+		return fmt.Errorf("commit transaction: %w", err)
 	}
 
-	txLogger.Printf("[COMMIT][OK] steps=%d elapsed=%s", len(steps), time.Since(start))
+	config.TransactionLogger.Printf("TX COMMIT OK | duration=%v steps=%d", time.Since(start), len(steps))
+	return nil
+}
+
+func ScanRow(row *sql.Row, dest ...interface{}) error {
+	if err := row.Scan(dest...); err != nil {
+		if err == sql.ErrNoRows {
+			return nil
+		}
+		return err
+	}
 	return nil
 }

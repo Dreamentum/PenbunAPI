@@ -1,15 +1,12 @@
 package models
 
 type ProductGroup struct {
-	ProductGroupID    string  `json:"product_group_id"`
-	ProductCategoryID string  `json:"product_category_id"`
-	ProductGroupName  string  `json:"product_group_name"`
-	Description       *string `json:"description"`
-	UpdateBy          *string `json:"update_by"`
-	UpdateDate        *string `json:"update_date"`
-	IsActive          *bool   `json:"is_active,omitempty"`
-	IsDelete          bool    `json:"is_delete"`
-
-	// Optional: Join field
-	CategoryName *string `json:"category_name,omitempty"`
+	AutoID         int     `json:"auto_id"`
+	ProductGroupID string  `json:"product_group_id"`
+	GroupName      string  `json:"group_name"`
+	Description    *string `json:"description,omitempty"`
+	IsActive bool `json:"is_active"`
+	UpdateBy       string  `json:"update_by"`
+	UpdateDate     string  `json:"update_date"`
+	IsDelete       bool    `json:"is_delete"`
 }

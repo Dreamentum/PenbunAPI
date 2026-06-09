@@ -1,366 +1,177 @@
 package controllers
 
 import (
+	"fmt"
+
+	"github.com/gofiber/fiber/v2"
+
 	"PenbunAPI/config"
 	"PenbunAPI/models"
 	"PenbunAPI/utils"
-	"database/sql"
-	"log"
-
-	"github.com/gofiber/fiber/v2"
 )
 
-// 1. Select All
-func SelectAllProducts(c *fiber.Ctx) error {
-	query := `
-		SELECT autoID, prefix, product_id, product_name_th, product_name_en,
-		       product_type_id, format_type_id, vendor_id, unit_type_id,
-		       isbn, author_name, publisher_date, edition_number,
-		       price, cost, description, note,
-		       count_stock, is_active, is_delete, update_by, update_date
-		FROM tb_product
-		WHERE is_delete = 0
-	`
-	rows, err := config.DB.Query(query)
+func generateBusinessID(prefix string, autoID int64) string {
+	seriesSize := int64(999999)
+	seriesIndex := ((autoID - 1) / seriesSize) % 26
+	seriesChar := string(rune('A' + seriesIndex))
+	runningNum := ((autoID - 1) % seriesSize) + 1
+	return fmt.Sprintf("%s%s%06d", prefix, seriesChar, runningNum)
+}
+
+func SelectAllProduct(c *fiber.Ctx) error {
+	rows, err := config.DB.Query(`SELECT autoID, product_id, product_code, product_name, product_group_id, product_format_type_id, unit_type_id, vendor_id, count_stock, cost_price, sell_price, barcode, weight_kg, description, update_by, update_date, is_active, id_status, is_delete FROM tb_product WHERE is_delete = 0`)
 	if err != nil {
-		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{
-			Status: "error", Message: "Failed to fetch products", Data: nil,
-		})
+		return utils.ErrorResponse(c, err.Error())
 	}
 	defer rows.Close()
 
-	var list []models.Product
+	var items []models.Product
 	for rows.Next() {
-		var p models.Product
-		if err := rows.Scan(
-			&p.AutoID, &p.Prefix, &p.ProductID, &p.ProductNameTH, &p.ProductNameEN,
-			&p.ProductTypeID, &p.FormatTypeID, &p.VendorID, &p.UnitTypeID,
-			&p.ISBN, &p.AuthorName, &p.PublisherDate, &p.EditionNumber,
-			&p.Price, &p.Cost, &p.Description, &p.Note,
-			&p.CountStock, &p.IsActive, &p.IsDelete, &p.UpdateBy, &p.UpdateDate,
-		); err != nil {
-			log.Println(err)
-			return c.Status(500).JSON(models.ApiResponse{
-				Status: "error", Message: "Failed to read data", Data: nil,
-			})
+		var item models.Product
+		if err := rows.Scan(&item.AutoID, &item.ProductID, &item.ProductCode, &item.ProductName, &item.ProductGroupID, &item.ProductFormatTypeID, &item.UnitTypeID, &item.VendorID, &item.CountStock, &item.CostPrice, &item.SellPrice, &item.Barcode, &item.WeightKg, &item.Description, &item.UpdateBy, &item.UpdateDate, &item.IsActive, &item.IDStatus, &item.IsDelete); err != nil {
+			return utils.ErrorResponse(c, err.Error())
 		}
-		list = append(list, p)
+		items = append(items, item)
 	}
-	return c.JSON(models.ApiResponse{
-		Status: "success", Message: "", Data: list,
-	})
+	return utils.SuccessResponse(c, "Product list retrieved", items)
 }
 
-// 2. Select Paging
-func SelectPageProducts(c *fiber.Ctx) error {
+func SelectPageProduct(c *fiber.Ctx) error {
 	page := c.QueryInt("page", 1)
 	limit := c.QueryInt("limit", 10)
 	offset := (page - 1) * limit
 
-	query := `
-		SELECT autoID, prefix, product_id, product_name_th, product_name_en,
-		       product_type_id, format_type_id, vendor_id, unit_type_id,
-		       isbn, author_name, publisher_date, edition_number,
-		       price, cost, description,
-		       count_stock, is_active, is_delete, update_by, update_date
-		FROM tb_product
-		WHERE is_delete = 0
-		ORDER BY update_date DESC
-		OFFSET @Offset ROWS FETCH NEXT @Limit ROWS ONLY
-	`
-	rows, err := config.DB.Query(query, sql.Named("Offset", offset), sql.Named("Limit", limit))
+	rows, err := config.DB.Query(`SELECT autoID, product_id, product_code, product_name, product_group_id, product_format_type_id, unit_type_id, vendor_id, count_stock, cost_price, sell_price, barcode, weight_kg, description, update_by, update_date, is_active, id_status, is_delete FROM tb_product WHERE is_delete = 0 ORDER BY update_date DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY`, offset, limit)
 	if err != nil {
-		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{
-			Status: "error", Message: "Failed to fetch products", Data: nil,
-		})
+		return utils.ErrorResponse(c, err.Error())
 	}
 	defer rows.Close()
 
-	var list []models.Product
+	var items []models.Product
 	for rows.Next() {
-		var p models.Product
-		if err := rows.Scan(
-			&p.AutoID, &p.Prefix, &p.ProductID, &p.ProductNameTH, &p.ProductNameEN,
-			&p.ProductTypeID, &p.FormatTypeID, &p.VendorID, &p.UnitTypeID,
-			&p.ISBN, &p.AuthorName, &p.PublisherDate, &p.EditionNumber,
-			&p.Price, &p.Cost, &p.Description, &p.Note,
-			&p.CountStock, &p.IsActive, &p.IsDelete, &p.UpdateBy, &p.UpdateDate,
-		); err != nil {
-			log.Println(err)
-			return c.Status(500).JSON(models.ApiResponse{
-				Status: "error", Message: "Failed to read data", Data: nil,
-			})
+		var item models.Product
+		if err := rows.Scan(&item.AutoID, &item.ProductID, &item.ProductCode, &item.ProductName, &item.ProductGroupID, &item.ProductFormatTypeID, &item.UnitTypeID, &item.VendorID, &item.CountStock, &item.CostPrice, &item.SellPrice, &item.Barcode, &item.WeightKg, &item.Description, &item.UpdateBy, &item.UpdateDate, &item.IsActive, &item.IDStatus, &item.IsDelete); err != nil {
+			return utils.ErrorResponse(c, err.Error())
 		}
-		list = append(list, p)
+		items = append(items, item)
 	}
-
-	var total int
-	err = config.DB.QueryRow(`SELECT COUNT(*) FROM tb_product WHERE is_delete = 0`).Scan(&total)
-	if err != nil {
-		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{
-			Status: "error", Message: "Failed to count records", Data: nil,
-		})
-	}
-
-	return c.JSON(models.ApiResponse{
-		Status: "success",
-		Data: fiber.Map{
-			"page": page, "limit": limit, "total": total,
-			"products": list,
-		},
-	})
+	return utils.SuccessResponse(c, "Product page retrieved", items)
 }
 
-// 3. Select By ID
 func SelectProductByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	query := `
-		SELECT autoID, prefix, product_id, product_name_th, product_name_en,
-		       product_type_id, format_type_id, vendor_id, unit_type_id,
-		       isbn, author_name, publisher_date, edition_number,
-		       price, cost, description,
-		       count_stock, is_active, is_delete, update_by, update_date
-		FROM tb_product
-		WHERE product_id = @ID AND is_delete = 0
-	`
-	row := config.DB.QueryRow(query, sql.Named("ID", id))
-	var p models.Product
-	if err := row.Scan(
-		&p.AutoID, &p.Prefix, &p.ProductID, &p.ProductNameTH, &p.ProductNameEN,
-		&p.ProductTypeID, &p.FormatTypeID, &p.VendorID, &p.UnitTypeID,
-		&p.ISBN, &p.AuthorName, &p.PublisherDate, &p.EditionNumber,
-		&p.Price, &p.Cost, &p.Description,
-		&p.CountStock, &p.IsActive, &p.IsDelete, &p.UpdateBy, &p.UpdateDate,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return c.Status(404).JSON(models.ApiResponse{
-				Status: "error", Message: "Product not found", Data: nil,
-			})
-		}
-		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{
-			Status: "error", Message: "Failed to read product", Data: nil,
-		})
+	var item models.Product
+	err := config.DB.QueryRow(`SELECT autoID, product_id, product_code, product_name, product_group_id, product_format_type_id, unit_type_id, vendor_id, count_stock, cost_price, sell_price, barcode, weight_kg, description, update_by, update_date, is_active, id_status, is_delete FROM tb_product WHERE product_id = ? AND is_delete = 0`, id).
+		Scan(&item.AutoID, &item.ProductID, &item.ProductCode, &item.ProductName, &item.ProductGroupID, &item.ProductFormatTypeID, &item.UnitTypeID, &item.VendorID, &item.CountStock, &item.CostPrice, &item.SellPrice, &item.Barcode, &item.WeightKg, &item.Description, &item.UpdateBy, &item.UpdateDate, &item.IsActive, &item.IDStatus, &item.IsDelete)
+	if err != nil {
+		return utils.FailResponse(c, "Product not found")
 	}
-	return c.JSON(models.ApiResponse{
-		Status: "success", Message: "", Data: p,
-	})
+	return utils.SuccessResponse(c, "Product found", item)
 }
 
-// 4. Select By Name (LIKE)
 func SelectProductByName(c *fiber.Ctx) error {
 	name := c.Params("name")
-	query := `
-		SELECT autoID, prefix, product_id, product_name_th, product_name_en,
-		       product_type_id, format_type_id, vendor_id, unit_type_id,
-		       isbn, author_name, publisher_date, edition_number,
-		       price, cost, description,
-		       count_stock, is_active, is_delete, update_by, update_date
-		FROM tb_product
-		WHERE (product_name_th LIKE '%' + @Name + '%' OR product_name_en LIKE '%' + @Name + '%') AND is_delete = 0
-	`
-	rows, err := config.DB.Query(query, sql.Named("Name", name))
+	rows, err := config.DB.Query(`SELECT autoID, product_id, product_code, product_name, product_group_id, product_format_type_id, unit_type_id, vendor_id, count_stock, cost_price, sell_price, barcode, weight_kg, description, update_by, update_date, is_active, id_status, is_delete FROM tb_product WHERE product_name LIKE '%' + ? + '%' AND is_delete = 0`, name)
 	if err != nil {
-		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{
-			Status: "error", Message: "Failed to search products", Data: nil,
-		})
+		return utils.ErrorResponse(c, err.Error())
 	}
 	defer rows.Close()
 
-	var list []models.Product
+	var items []models.Product
 	for rows.Next() {
-		var p models.Product
-		if err := rows.Scan(
-			&p.AutoID, &p.Prefix, &p.ProductID, &p.ProductNameTH, &p.ProductNameEN,
-			&p.ProductTypeID, &p.FormatTypeID, &p.VendorID, &p.UnitTypeID,
-			&p.ISBN, &p.AuthorName, &p.PublisherDate, &p.EditionNumber,
-			&p.Price, &p.Cost, &p.Description,
-			&p.CountStock, &p.IsActive, &p.IsDelete, &p.UpdateBy, &p.UpdateDate,
-		); err != nil {
-			log.Println(err)
-			return c.Status(500).JSON(models.ApiResponse{
-				Status: "error", Message: "Failed to read data", Data: nil,
-			})
+		var item models.Product
+		if err := rows.Scan(&item.AutoID, &item.ProductID, &item.ProductCode, &item.ProductName, &item.ProductGroupID, &item.ProductFormatTypeID, &item.UnitTypeID, &item.VendorID, &item.CountStock, &item.CostPrice, &item.SellPrice, &item.Barcode, &item.WeightKg, &item.Description, &item.UpdateBy, &item.UpdateDate, &item.IsActive, &item.IDStatus, &item.IsDelete); err != nil {
+			return utils.ErrorResponse(c, err.Error())
 		}
-		list = append(list, p)
+		items = append(items, item)
 	}
-	return c.JSON(models.ApiResponse{
-		Status: "success", Message: "", Data: list,
-	})
+	return utils.SuccessResponse(c, "Product search results", items)
 }
 
-// 5. Insert
 func InsertProduct(c *fiber.Ctx) error {
-	var p models.Product
-	if err := c.BodyParser(&p); err != nil {
-		return c.Status(400).JSON(models.ApiResponse{
-			Status: "error", Message: "Invalid request body", Data: nil,
-		})
+	var item models.Product
+	if err := c.BodyParser(&item); err != nil {
+		return utils.FailResponse(c, "Invalid request body")
+	}
+	if item.ProductName == "" {
+		return utils.FailResponse(c, "Product name is required")
+	}
+	if item.ProductCode == "" {
+		return utils.FailResponse(c, "Product code is required")
+	}
+	if item.ProductGroupID == "" {
+		return utils.FailResponse(c, "Product group ID is required")
 	}
 
-	// 🚩 DUMMY ID for TRIGGER mechanism (product_id is NOT NULL)
-	dummyID := "TEMP"
-
-	query := `
-		INSERT INTO tb_product (
-			product_id, product_name_th, product_name_en,
-			product_type_id, format_type_id, vendor_id, unit_type_id,
-			isbn, author_name, publisher_date, edition_number,
-			price, cost, description,
-			count_stock, update_by
-		)
-		VALUES (
-			@ProductID, @NameTH, @NameEN,
-			@TypeID, @FormatID, @VendorID, @UnitID,
-			@ISBN, @Author, @PubDate, @Edition,
-			@Price, @Cost, @Desc,
-			@CountStock, @UpdateBy
-		)
-	`
-	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
-		func(tx *sql.Tx) error {
-			_, err := tx.Exec(query,
-				sql.Named("ProductID", dummyID), // Passed strictly to satisfy NOT NULL constraint
-				sql.Named("NameTH", p.ProductNameTH),
-				sql.Named("NameEN", p.ProductNameEN),
-				sql.Named("TypeID", p.ProductTypeID),
-				sql.Named("FormatID", p.FormatTypeID),
-				sql.Named("VendorID", p.VendorID),
-				sql.Named("UnitID", p.UnitTypeID),
-				sql.Named("ISBN", p.ISBN),
-				sql.Named("Author", p.AuthorName),
-				sql.Named("PubDate", p.PublisherDate),
-				sql.Named("Edition", p.EditionNumber),
-				sql.Named("Price", p.Price),
-				sql.Named("Cost", p.Cost),
-				sql.Named("Desc", p.Description),
-				sql.Named("CountStock", p.CountStock),
-				sql.Named("UpdateBy", p.UpdateBy),
-			)
-			return err
-		},
-	})
+	tx, err := config.DB.Begin()
 	if err != nil {
-		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{
-			Status: "error", Message: "Failed to insert product", Data: nil,
-		})
+		return utils.ErrorResponse(c, err.Error())
 	}
-	return c.Status(201).JSON(models.ApiResponse{
-		Status: "success", Message: "Product added successfully", Data: nil,
-	})
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	var autoID int64
+	err = tx.QueryRow(`INSERT INTO tb_product (product_code, product_name, product_group_id, product_format_type_id, unit_type_id, vendor_id, count_stock, cost_price, sell_price, barcode, weight_kg, description, id_status, update_by) OUTPUT INSERTED.autoID VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), 'ACTIVE'), ?)`,
+		item.ProductCode, item.ProductName, item.ProductGroupID, item.ProductFormatTypeID, item.UnitTypeID, item.VendorID, item.CountStock, item.CostPrice, item.SellPrice, item.Barcode, item.WeightKg, item.Description, item.IDStatus, item.UpdateBy).Scan(&autoID)
+	if err != nil {
+		tx.Rollback()
+		return utils.ErrorResponse(c, err.Error())
+	}
+
+	productID := generateBusinessID("PDT", autoID)
+
+	_, err = tx.Exec(`UPDATE tb_product SET product_id = ? WHERE autoID = ?`, productID, autoID)
+	if err != nil {
+		tx.Rollback()
+		return utils.ErrorResponse(c, err.Error())
+	}
+
+	if err := tx.Commit(); err != nil {
+		return utils.ErrorResponse(c, err.Error())
+	}
+
+	return utils.SuccessResponse(c, "Product added successfully", fiber.Map{"product_id": productID, "product_name": item.ProductName})
 }
 
-// 6. Update
 func UpdateProductByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	var p models.Product
-	if err := c.BodyParser(&p); err != nil {
-		return c.Status(400).JSON(models.ApiResponse{
-			Status: "error", Message: "Invalid request body", Data: nil,
-		})
+	var item models.Product
+	if err := c.BodyParser(&item); err != nil {
+		return utils.FailResponse(c, "Invalid request body")
 	}
 
-	query := `
-		UPDATE tb_product
-		SET product_name_th = COALESCE(NULLIF(@NameTH, ''), product_name_th),
-			product_name_en = @NameEN,
-			product_type_id = @TypeID,
-			format_type_id = @FormatID,
-			vendor_id = @VendorID,
-			unit_type_id = @UnitID,
-			isbn = @ISBN,
-			author_name = @Author,
-			publisher_date = @PubDate,
-			edition_number = @Edition,
-			price = @Price,
-			cost = @Cost,
-			description = @Desc,
-			count_stock = @CountStock,
-			update_by = @UpdateBy
-		WHERE product_id = @ID AND is_delete = 0
-	`
-	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
-		func(tx *sql.Tx) error {
-			_, err := tx.Exec(query,
-				sql.Named("NameTH", p.ProductNameTH),
-				sql.Named("NameEN", p.ProductNameEN),
-				sql.Named("TypeID", p.ProductTypeID),
-				sql.Named("FormatID", p.FormatTypeID),
-				sql.Named("VendorID", p.VendorID),
-				sql.Named("UnitID", p.UnitTypeID),
-				sql.Named("ISBN", p.ISBN),
-				sql.Named("Author", p.AuthorName),
-				sql.Named("PubDate", p.PublisherDate),
-				sql.Named("Edition", p.EditionNumber),
-				sql.Named("Price", p.Price),
-				sql.Named("Cost", p.Cost),
-				sql.Named("Desc", p.Description),
-				sql.Named("CountStock", p.CountStock),
-				sql.Named("UpdateBy", p.UpdateBy),
-				sql.Named("ID", id),
-			)
-			return err
-		},
-	})
-	if err != nil {
-		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{
-			Status: "error", Message: "Failed to update product", Data: nil,
-		})
+	steps := []utils.TransactionStep{
+		{Name: "UpdateProduct", Query: `UPDATE tb_product SET product_code = COALESCE(NULLIF(?, ''), product_code), product_name = COALESCE(NULLIF(?, ''), product_name), product_group_id = COALESCE(NULLIF(?, ''), product_group_id), product_format_type_id = COALESCE(?, product_format_type_id), unit_type_id = COALESCE(?, unit_type_id), vendor_id = COALESCE(?, vendor_id), count_stock = COALESCE(?, count_stock), cost_price = COALESCE(?, cost_price), sell_price = COALESCE(?, sell_price), barcode = COALESCE(?, barcode), weight_kg = COALESCE(?, weight_kg), description = COALESCE(?, description), id_status = COALESCE(NULLIF(?, ''), id_status), update_by = ? WHERE product_id = ? AND is_delete = 0`,
+			Args: []interface{}{item.ProductCode, item.ProductName, item.ProductGroupID, item.ProductFormatTypeID, item.UnitTypeID, item.VendorID, item.CountStock, item.CostPrice, item.SellPrice, item.Barcode, item.WeightKg, item.Description, item.IDStatus, item.UpdateBy, id}},
 	}
-	return c.JSON(models.ApiResponse{
-		Status: "success", Message: "Product updated successfully", Data: nil,
-	})
+	if err := utils.ExecuteTransaction(steps); err != nil {
+		return utils.ErrorResponse(c, err.Error())
+	}
+	return utils.SuccessResponse(c, "Product updated successfully", fiber.Map{"product_id": id})
 }
 
-// 7. Delete (Soft)
 func DeleteProductByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	query := `
-		UPDATE tb_product
-		SET is_delete = 1,
-			update_date = CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'SE Asia Standard Time' AS DATETIME)
-		WHERE product_id = @ID
-	`
-	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
-		func(tx *sql.Tx) error {
-			_, err := tx.Exec(query, sql.Named("ID", id))
-			return err
-		},
-	})
-	if err != nil {
-		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{
-			Status: "error", Message: "Failed to delete product", Data: nil,
-		})
+	username := c.Query("user", "UNKNOWN")
+	steps := []utils.TransactionStep{
+		{Name: "DeleteProduct", Query: "UPDATE tb_product SET is_delete = 1, update_by = ? WHERE product_id = ?", Args: []interface{}{username, id}},
 	}
-	return c.JSON(models.ApiResponse{
-		Status: "success", Message: "Product deleted successfully", Data: nil,
-	})
+	if err := utils.ExecuteTransaction(steps); err != nil {
+		return utils.ErrorResponse(c, err.Error())
+	}
+	return utils.SuccessResponse(c, "Product deleted successfully", nil)
 }
 
-// 8. Remove (Hard)
 func RemoveProductByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	query := `DELETE FROM tb_product WHERE product_id = @ID`
-	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
-		func(tx *sql.Tx) error {
-			_, err := tx.Exec(query, sql.Named("ID", id))
-			return err
-		},
-	})
-	if err != nil {
-		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{
-			Status: "error", Message: "Failed to remove product", Data: nil,
-		})
+	steps := []utils.TransactionStep{
+		{Name: "RemoveProduct", Query: "DELETE FROM tb_product WHERE product_id = ?", Args: []interface{}{id}},
 	}
-	return c.JSON(models.ApiResponse{
-		Status: "success", Message: "Product removed successfully", Data: nil,
-	})
+	if err := utils.ExecuteTransaction(steps); err != nil {
+		return utils.ErrorResponse(c, err.Error())
+	}
+	return utils.SuccessResponse(c, "Product removed permanently", nil)
 }

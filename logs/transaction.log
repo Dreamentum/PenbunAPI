@@ -1,0 +1,24 @@
+[TX] 2026/06/10 01:03:36 auth.go:31: LOGIN FAIL | user=admin | error=user not found
+[TX] 2026/06/10 01:03:36 auth.go:31: LOGIN FAIL | user=admin | error=user not found
+[TX] 2026/06/10 01:05:30 auth.go:31: LOGIN FAIL | user=admin | error=user not found
+[TX] 2026/06/10 01:08:02 auth.go:31: LOGIN FAIL | user=admin | error=user not found
+[TX] 2026/06/10 01:08:02 auth.go:31: LOGIN FAIL | user=admin | error=user not found
+[TX] 2026/06/10 01:08:17 auth.go:31: LOGIN FAIL | user=admin | error=user not found
+[TX] 2026/06/10 01:08:44 auth.go:31: LOGIN FAIL | user=admin | error=user not found
+[TX] 2026/06/10 01:11:35 auth.go:31: LOGIN FAIL | user=admin | error=user not found
+[TX] 2026/06/10 01:11:47 auth.go:31: LOGIN FAIL | user=admin | error=user not found
+[TX] 2026/06/10 01:12:34 auth.go:31: LOGIN FAIL | user=jack | error=user not found
+[TX] 2026/06/10 01:13:06 auth.go:31: LOGIN FAIL | user=jack | error=user not found
+[TX] 2026/06/10 01:13:18 auth.go:31: LOGIN FAIL | user=jack | error=user not found
+[TX] 2026/06/10 01:14:37 auth.go:31: LOGIN FAIL | user=jack | error=user not found
+[TX] 2026/06/10 01:15:29 auth.go:31: LOGIN FAIL | user=jack | error=user not found
+[TX] 2026/06/10 01:16:02 auth.go:31: LOGIN FAIL | user=jack | error=sql: expected 0 arguments, got 1
+[TX] 2026/06/10 01:17:06 auth.go:54: LOGIN OK | user=jack level=ADMIN
+[TX] 2026/06/10 01:18:13 auth.go:54: LOGIN OK | user=jack level=ADMIN
+[TX] 2026/06/10 01:18:13 auth.go:54: LOGIN OK | user=jack level=ADMIN
+[TX] 2026/06/10 01:25:09 auth.go:54: LOGIN OK | user=admin level=ADMIN
+[TX] 2026/06/10 01:34:25 auth.go:54: LOGIN OK | user=jack level=HACKER
+[TX] 2026/06/10 02:01:35 auth.go:54: LOGIN OK | user=jack level=HACKER
+[TX] 2026/06/10 02:01:41 auth.go:54: LOGIN OK | user=jack level=HACKER
+[TX] 2026/06/10 02:01:59 auth.go:54: LOGIN OK | user=jack level=HACKER
+[TX] 2026/06/10 02:08:21 auth.go:54: LOGIN OK | user=admin level=ADMIN
