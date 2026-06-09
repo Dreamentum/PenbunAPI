@@ -1,52 +1,29 @@
 package controllers
 
 import (
+	"github.com/gofiber/fiber/v2"
+
 	"PenbunAPI/config"
 	"PenbunAPI/models"
 	"PenbunAPI/utils"
-	"database/sql"
-	"errors"
-	"log"
-
-	"github.com/gofiber/fiber/v2"
 )
 
 func SelectAllUnitType(c *fiber.Ctx) error {
-	query := `
-		SELECT unit_type_id, unit_type_name, COALESCE(description, ''), update_by, update_date, is_active
-		FROM tb_unit_type
-		WHERE is_delete = 0
-	`
-	rows, err := config.DB.Query(query)
+	rows, err := config.DB.Query("SELECT autoID, unit_type_id, type_name, description, is_active, update_by, update_date, is_delete FROM tb_unit_type WHERE is_delete = 0")
 	if err != nil {
-		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{
-			Status:  "error",
-			Message: "Failed to fetch unit types",
-			Data:    nil,
-		})
+		return utils.ErrorResponse(c, err.Error())
 	}
 	defer rows.Close()
 
-	var result []models.UnitType
+	var items []models.UnitType
 	for rows.Next() {
-		var ut models.UnitType
-		if err := rows.Scan(&ut.UnitTypeID, &ut.UnitTypeName, &ut.Description, &ut.UpdateBy, &ut.UpdateDate, &ut.IsActive); err != nil {
-			log.Println(err)
-			return c.Status(500).JSON(models.ApiResponse{
-				Status:  "error",
-				Message: "Failed to read data",
-				Data:    nil,
-			})
+		var item models.UnitType
+		if err := rows.Scan(&item.AutoID, &item.UnitTypeID, &item.TypeName, &item.Description, &item.IsActive, &item.UpdateBy, &item.UpdateDate, &item.IsDelete); err != nil {
+			return utils.ErrorResponse(c, err.Error())
 		}
-		result = append(result, ut)
+		items = append(items, item)
 	}
-
-	return c.JSON(models.ApiResponse{
-		Status:  "success",
-		Message: "",
-		Data:    result,
-	})
+	return utils.SuccessResponse(c, "Unit type list retrieved", items)
 }
 
 func SelectPageUnitType(c *fiber.Ctx) error {
@@ -54,291 +31,108 @@ func SelectPageUnitType(c *fiber.Ctx) error {
 	limit := c.QueryInt("limit", 10)
 	offset := (page - 1) * limit
 
-	query := `
-		SELECT unit_type_id, unit_type_name, COALESCE(description, ''), update_by, update_date, is_active
-		FROM tb_unit_type
-		WHERE is_delete = 0
-		ORDER BY update_date DESC
-		OFFSET @Offset ROWS FETCH NEXT @Limit ROWS ONLY
-	`
-	rows, err := config.DB.Query(query, sql.Named("Offset", offset), sql.Named("Limit", limit))
+	rows, err := config.DB.Query("SELECT autoID, unit_type_id, type_name, description, is_active, update_by, update_date, is_delete FROM tb_unit_type WHERE is_delete = 0 ORDER BY update_date DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY", offset, limit)
 	if err != nil {
-		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{
-			Status:  "error",
-			Message: "Failed to fetch unit types",
-			Data:    nil,
-		})
+		return utils.ErrorResponse(c, err.Error())
 	}
 	defer rows.Close()
 
-	var result []models.UnitType
+	var items []models.UnitType
 	for rows.Next() {
-		var ut models.UnitType
-		if err := rows.Scan(&ut.UnitTypeID, &ut.UnitTypeName, &ut.Description, &ut.UpdateBy, &ut.UpdateDate, &ut.IsActive); err != nil {
-			log.Println(err)
-			return c.Status(500).JSON(models.ApiResponse{
-				Status:  "error",
-				Message: "Failed to read data",
-				Data:    nil,
-			})
+		var item models.UnitType
+		if err := rows.Scan(&item.AutoID, &item.UnitTypeID, &item.TypeName, &item.Description, &item.IsActive, &item.UpdateBy, &item.UpdateDate, &item.IsDelete); err != nil {
+			return utils.ErrorResponse(c, err.Error())
 		}
-		result = append(result, ut)
+		items = append(items, item)
 	}
-
-	var total int
-	err = config.DB.QueryRow(`SELECT COUNT(*) FROM tb_unit_type WHERE is_delete = 0`).Scan(&total)
-	if err != nil {
-		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{
-			Status:  "error",
-			Message: "Failed to count records",
-			Data:    nil,
-		})
-	}
-
-	return c.JSON(models.ApiResponse{
-		Status: "success",
-		Data: fiber.Map{
-			"page":      page,
-			"limit":     limit,
-			"total":     total,
-			"items":     result,
-		},
-	})
+	return utils.SuccessResponse(c, "Unit type page retrieved", items)
 }
 
 func SelectUnitTypeByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	query := `
-		SELECT unit_type_id, unit_type_name, COALESCE(description, ''), update_by, update_date, is_active
-		FROM tb_unit_type
-		WHERE unit_type_id = @ID AND is_delete = 0
-	`
-	row := config.DB.QueryRow(query, sql.Named("ID", id))
-
-	var ut models.UnitType
-	if err := row.Scan(&ut.UnitTypeID, &ut.UnitTypeName, &ut.Description, &ut.UpdateBy, &ut.UpdateDate, &ut.IsActive); err != nil {
-		if err == sql.ErrNoRows {
-			return c.Status(404).JSON(models.ApiResponse{
-				Status:  "error",
-				Message: "Unit type not found",
-				Data:    nil,
-			})
-		}
-		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{
-			Status:  "error",
-			Message: "Failed to read data",
-			Data:    nil,
-		})
+	var item models.UnitType
+	err := config.DB.QueryRow("SELECT autoID, unit_type_id, type_name, description, is_active, update_by, update_date, is_delete FROM tb_unit_type WHERE unit_type_id = ? AND is_delete = 0", id).
+		Scan(&item.AutoID, &item.UnitTypeID, &item.TypeName, &item.Description, &item.IsActive, &item.UpdateBy, &item.UpdateDate, &item.IsDelete)
+	if err != nil {
+		return utils.FailResponse(c, "Unit type not found")
 	}
-
-	return c.JSON(models.ApiResponse{
-		Status:  "success",
-		Message: "",
-		Data:    ut,
-	})
+	return utils.SuccessResponse(c, "Unit type found", item)
 }
 
 func SelectUnitTypeByName(c *fiber.Ctx) error {
 	name := c.Params("name")
-	query := `
-		SELECT unit_type_id, unit_type_name, COALESCE(description, ''), update_by, update_date, is_active
-		FROM tb_unit_type
-		WHERE unit_type_name LIKE '%' + @Name + '%' AND is_delete = 0
-	`
-	rows, err := config.DB.Query(query, sql.Named("Name", name))
+	rows, err := config.DB.Query("SELECT autoID, unit_type_id, type_name, description, is_active, update_by, update_date, is_delete FROM tb_unit_type WHERE type_name LIKE '%' + ? + '%' AND is_delete = 0", name)
 	if err != nil {
-		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{
-			Status:  "error",
-			Message: "Failed to fetch unit types",
-			Data:    nil,
-		})
+		return utils.ErrorResponse(c, err.Error())
 	}
 	defer rows.Close()
 
-	var result []models.UnitType
+	var items []models.UnitType
 	for rows.Next() {
-		var ut models.UnitType
-		if err := rows.Scan(&ut.UnitTypeID, &ut.UnitTypeName, &ut.Description, &ut.UpdateBy, &ut.UpdateDate, &ut.IsActive); err != nil {
-			log.Println(err)
-			return c.Status(500).JSON(models.ApiResponse{
-				Status:  "error",
-				Message: "Failed to read data",
-				Data:    nil,
-			})
+		var item models.UnitType
+		if err := rows.Scan(&item.AutoID, &item.UnitTypeID, &item.TypeName, &item.Description, &item.IsActive, &item.UpdateBy, &item.UpdateDate, &item.IsDelete); err != nil {
+			return utils.ErrorResponse(c, err.Error())
 		}
-		result = append(result, ut)
+		items = append(items, item)
 	}
-
-	if len(result) == 0 {
-		return c.Status(404).JSON(models.ApiResponse{
-			Status:  "error",
-			Message: "No matching unit type found",
-			Data:    nil,
-		})
-	}
-
-	return c.JSON(models.ApiResponse{
-		Status:  "success",
-		Message: "",
-		Data:    result,
-	})
+	return utils.SuccessResponse(c, "Unit type search results", items)
 }
 
 func InsertUnitType(c *fiber.Ctx) error {
-	var ut models.UnitType
-	if err := c.BodyParser(&ut); err != nil {
-		return c.Status(400).JSON(models.ApiResponse{
-			Status:  "error",
-			Message: "Invalid request body",
-			Data:    nil,
-		})
+	var item models.UnitType
+	if err := c.BodyParser(&item); err != nil {
+		return utils.FailResponse(c, "Invalid request body")
+	}
+	if item.TypeName == "" {
+		return utils.FailResponse(c, "Type name is required")
 	}
 
-	query := `
-		INSERT INTO tb_unit_type (unit_type_id, unit_type_name, description, update_by)
-		VALUES (NULL, @Name, @Desc, @By)
-	`
-	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
-		func(tx *sql.Tx) error {
-			_, err := tx.Exec(query,
-				sql.Named("Name", ut.UnitTypeName),
-				sql.Named("Desc", ut.Description),
-				sql.Named("By", ut.UpdateBy),
-			)
-			return err
-		},
-	})
-	if err != nil {
-		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{
-			Status:  "error",
-			Message: "Failed to insert unit type",
-			Data:    nil,
-		})
+	steps := []utils.TransactionStep{
+		{Name: "InsertUnitType", Query: "INSERT INTO tb_unit_type (type_name, description, update_by) VALUES (?, ?, ?)",
+			Args: []interface{}{item.TypeName, item.Description, item.UpdateBy}},
 	}
-
-	return c.Status(201).JSON(models.ApiResponse{
-		Status:  "success",
-		Message: "Unit type added successfully",
-		Data:    nil,
-	})
+	if err := utils.ExecuteTransaction(steps); err != nil {
+		return utils.ErrorResponse(c, err.Error())
+	}
+	return utils.SuccessResponse(c, "Unit type added successfully", fiber.Map{"type_name": item.TypeName})
 }
 
 func UpdateUnitTypeByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	var ut models.UnitType
-	if err := c.BodyParser(&ut); err != nil {
-		return c.Status(400).JSON(models.ApiResponse{
-			Status:  "error",
-			Message: "Invalid request body",
-			Data:    nil,
-		})
+	var item models.UnitType
+	if err := c.BodyParser(&item); err != nil {
+		return utils.FailResponse(c, "Invalid request body")
 	}
 
-	query := `
-		UPDATE tb_unit_type
-		SET unit_type_name = COALESCE(NULLIF(@Name, ''), unit_type_name),
-			description = COALESCE(@Desc, description),
-			update_by = @By,
-			is_active = COALESCE(@Status, is_active)
-		WHERE unit_type_id = @ID AND is_delete = 0
-	`
-	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
-		func(tx *sql.Tx) error {
-			res, err := tx.Exec(query,
-				sql.Named("Name", ut.UnitTypeName),
-				sql.Named("Desc", ut.Description),
-				sql.Named("By", ut.UpdateBy),
-				sql.Named("Status", ut.IsActive),
-				sql.Named("ID", id),
-			)
-			if err != nil {
-				return err
-			}
-			rows, err := res.RowsAffected()
-			if err != nil {
-				return err
-			}
-			if rows == 0 {
-				return errors.New("unit type not found")
-			}
-			return nil
-		},
-	})
-	if err != nil {
-		if err.Error() == "unit type not found" {
-			return c.Status(404).JSON(models.ApiResponse{
-				Status:  "error",
-				Message: "Unit type not found",
-				Data:    nil,
-			})
-		}
-		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{
-			Status:  "error",
-			Message: "Failed to update unit type",
-			Data:    nil,
-		})
+	steps := []utils.TransactionStep{
+		{Name: "UpdateUnitType", Query: "UPDATE tb_unit_type SET type_name = COALESCE(NULLIF(?, ''), type_name), description = COALESCE(?, description), update_by = ? WHERE unit_type_id = ? AND is_delete = 0",
+			Args: []interface{}{item.TypeName, item.Description, item.UpdateBy, id}},
 	}
-	return c.JSON(models.ApiResponse{
-		Status:  "success",
-		Message: "Unit type updated successfully",
-		Data:    nil,
-	})
+	if err := utils.ExecuteTransaction(steps); err != nil {
+		return utils.ErrorResponse(c, err.Error())
+	}
+	return utils.SuccessResponse(c, "Unit type updated successfully", fiber.Map{"unit_type_id": id})
 }
 
 func DeleteUnitTypeByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	query := `
-		UPDATE tb_unit_type
-		SET is_delete = 1
-		WHERE unit_type_id = @ID
-	`
-	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
-		func(tx *sql.Tx) error {
-			_, err := tx.Exec(query, sql.Named("ID", id))
-			return err
-		},
-	})
-	if err != nil {
-		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{
-			Status:  "error",
-			Message: "Failed to soft delete unit type",
-			Data:    nil,
-		})
+	username := c.Query("user", "UNKNOWN")
+	steps := []utils.TransactionStep{
+		{Name: "DeleteUnitType", Query: "UPDATE tb_unit_type SET is_delete = 1, update_by = ? WHERE unit_type_id = ?", Args: []interface{}{username, id}},
 	}
-	return c.JSON(models.ApiResponse{
-		Status:  "success",
-		Message: "Unit type marked as deleted",
-		Data:    nil,
-	})
+	if err := utils.ExecuteTransaction(steps); err != nil {
+		return utils.ErrorResponse(c, err.Error())
+	}
+	return utils.SuccessResponse(c, "Unit type deleted successfully", nil)
 }
 
 func RemoveUnitTypeByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	query := `DELETE FROM tb_unit_type WHERE unit_type_id = @ID`
-	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
-		func(tx *sql.Tx) error {
-			_, err := tx.Exec(query, sql.Named("ID", id))
-			return err
-		},
-	})
-	if err != nil {
-		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{
-			Status:  "error",
-			Message: "Failed to hard delete unit type",
-			Data:    nil,
-		})
+	steps := []utils.TransactionStep{
+		{Name: "RemoveUnitType", Query: "DELETE FROM tb_unit_type WHERE unit_type_id = ?", Args: []interface{}{id}},
 	}
-	return c.JSON(models.ApiResponse{
-		Status:  "success",
-		Message: "Unit type removed successfully",
-		Data:    nil,
-	})
+	if err := utils.ExecuteTransaction(steps); err != nil {
+		return utils.ErrorResponse(c, err.Error())
+	}
+	return utils.SuccessResponse(c, "Unit type removed permanently", nil)
 }

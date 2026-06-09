@@ -1,40 +1,29 @@
 package controllers
 
 import (
+	"github.com/gofiber/fiber/v2"
+
 	"PenbunAPI/config"
 	"PenbunAPI/models"
 	"PenbunAPI/utils"
-	"database/sql"
-	"errors"
-	"log"
-
-	"github.com/gofiber/fiber/v2"
 )
 
 func SelectAllProductFormatType(c *fiber.Ctx) error {
-	query := `
-		SELECT product_format_type_id, format_name, description, update_by, update_date, is_active, is_delete
-		FROM tb_product_format_type
-		WHERE is_delete = 0
-	`
-	rows, err := config.DB.Query(query)
+	rows, err := config.DB.Query("SELECT autoID, product_format_type_id, type_name, description, is_active, update_by, update_date, is_delete FROM tb_product_format_type WHERE is_delete = 0")
 	if err != nil {
-		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to fetch product format types"})
+		return utils.ErrorResponse(c, err.Error())
 	}
 	defer rows.Close()
 
-	var result []models.ProductFormatType
+	var items []models.ProductFormatType
 	for rows.Next() {
-		var ft models.ProductFormatType
-		if err := rows.Scan(&ft.ProductFormatTypeID, &ft.FormatName, &ft.Description, &ft.UpdateBy, &ft.UpdateDate, &ft.IsActive, &ft.IsDelete); err != nil {
-			log.Println(err)
-			return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to read data"})
+		var item models.ProductFormatType
+		if err := rows.Scan(&item.AutoID, &item.ProductFormatTypeID, &item.TypeName, &item.Description, &item.IsActive, &item.UpdateBy, &item.UpdateDate, &item.IsDelete); err != nil {
+			return utils.ErrorResponse(c, err.Error())
 		}
-		result = append(result, ft)
+		items = append(items, item)
 	}
-
-	return c.JSON(models.ApiResponse{Status: "success", Data: result})
+	return utils.SuccessResponse(c, "Product format type list retrieved", items)
 }
 
 func SelectPageProductFormatType(c *fiber.Ctx) error {
@@ -42,209 +31,108 @@ func SelectPageProductFormatType(c *fiber.Ctx) error {
 	limit := c.QueryInt("limit", 10)
 	offset := (page - 1) * limit
 
-	query := `
-		SELECT product_format_type_id, format_name, description, update_by, update_date, is_active, is_delete
-		FROM tb_product_format_type
-		WHERE is_delete = 0
-		ORDER BY update_date DESC
-		OFFSET @Offset ROWS FETCH NEXT @Limit ROWS ONLY
-	`
-	rows, err := config.DB.Query(query, sql.Named("Offset", offset), sql.Named("Limit", limit))
+	rows, err := config.DB.Query("SELECT autoID, product_format_type_id, type_name, description, is_active, update_by, update_date, is_delete FROM tb_product_format_type WHERE is_delete = 0 ORDER BY update_date DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY", offset, limit)
 	if err != nil {
-		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to fetch product format types"})
+		return utils.ErrorResponse(c, err.Error())
 	}
 	defer rows.Close()
 
-	var result []models.ProductFormatType
+	var items []models.ProductFormatType
 	for rows.Next() {
-		var ft models.ProductFormatType
-		if err := rows.Scan(&ft.ProductFormatTypeID, &ft.FormatName, &ft.Description, &ft.UpdateBy, &ft.UpdateDate, &ft.IsActive, &ft.IsDelete); err != nil {
-			log.Println(err)
-			return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to read data"})
+		var item models.ProductFormatType
+		if err := rows.Scan(&item.AutoID, &item.ProductFormatTypeID, &item.TypeName, &item.Description, &item.IsActive, &item.UpdateBy, &item.UpdateDate, &item.IsDelete); err != nil {
+			return utils.ErrorResponse(c, err.Error())
 		}
-		result = append(result, ft)
+		items = append(items, item)
 	}
-
-	var total int
-	if err := config.DB.QueryRow(`SELECT COUNT(*) FROM tb_product_format_type WHERE is_delete = 0`).Scan(&total); err != nil {
-		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to count records"})
-	}
-
-	return c.JSON(models.ApiResponse{
-		Status: "success",
-		Data:   fiber.Map{"page": page, "limit": limit, "total": total, "productFormatType": result},
-	})
+	return utils.SuccessResponse(c, "Product format type page retrieved", items)
 }
 
 func SelectProductFormatTypeByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	query := `
-		SELECT product_format_type_id, format_name, description, update_by, update_date, is_active, is_delete
-		FROM tb_product_format_type
-		WHERE product_format_type_id = @ID AND is_delete = 0
-	`
-	row := config.DB.QueryRow(query, sql.Named("ID", id))
-
-	var ft models.ProductFormatType
-	if err := row.Scan(&ft.ProductFormatTypeID, &ft.FormatName, &ft.Description, &ft.UpdateBy, &ft.UpdateDate, &ft.IsActive, &ft.IsDelete); err != nil {
-		if err == sql.ErrNoRows {
-			return c.Status(404).JSON(models.ApiResponse{Status: "error", Message: "Product format type not found"})
-		}
-		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to read data"})
+	var item models.ProductFormatType
+	err := config.DB.QueryRow("SELECT autoID, product_format_type_id, type_name, description, is_active, update_by, update_date, is_delete FROM tb_product_format_type WHERE product_format_type_id = ? AND is_delete = 0", id).
+		Scan(&item.AutoID, &item.ProductFormatTypeID, &item.TypeName, &item.Description, &item.IsActive, &item.UpdateBy, &item.UpdateDate, &item.IsDelete)
+	if err != nil {
+		return utils.FailResponse(c, "Product format type not found")
 	}
-
-	return c.JSON(models.ApiResponse{Status: "success", Data: ft})
+	return utils.SuccessResponse(c, "Product format type found", item)
 }
 
 func SelectProductFormatTypeByName(c *fiber.Ctx) error {
 	name := c.Params("name")
-	query := `
-		SELECT product_format_type_id, format_name, description, update_by, update_date, is_active, is_delete
-		FROM tb_product_format_type
-		WHERE format_name LIKE '%' + @Name + '%' AND is_delete = 0
-	`
-	rows, err := config.DB.Query(query, sql.Named("Name", name))
+	rows, err := config.DB.Query("SELECT autoID, product_format_type_id, type_name, description, is_active, update_by, update_date, is_delete FROM tb_product_format_type WHERE type_name LIKE '%' + ? + '%' AND is_delete = 0", name)
 	if err != nil {
-		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to search product format types"})
+		return utils.ErrorResponse(c, err.Error())
 	}
 	defer rows.Close()
 
-	var result []models.ProductFormatType
+	var items []models.ProductFormatType
 	for rows.Next() {
-		var ft models.ProductFormatType
-		if err := rows.Scan(&ft.ProductFormatTypeID, &ft.FormatName, &ft.Description, &ft.UpdateBy, &ft.UpdateDate, &ft.IsActive, &ft.IsDelete); err != nil {
-			log.Println(err)
-			return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to read data"})
+		var item models.ProductFormatType
+		if err := rows.Scan(&item.AutoID, &item.ProductFormatTypeID, &item.TypeName, &item.Description, &item.IsActive, &item.UpdateBy, &item.UpdateDate, &item.IsDelete); err != nil {
+			return utils.ErrorResponse(c, err.Error())
 		}
-		result = append(result, ft)
+		items = append(items, item)
 	}
-
-	if len(result) == 0 {
-		return c.Status(404).JSON(models.ApiResponse{Status: "error", Message: "No matching product format type found"})
-	}
-
-	return c.JSON(models.ApiResponse{Status: "success", Data: result})
+	return utils.SuccessResponse(c, "Product format type search results", items)
 }
 
 func InsertProductFormatType(c *fiber.Ctx) error {
-	var ft models.ProductFormatType
-	if err := c.BodyParser(&ft); err != nil {
-		return c.Status(400).JSON(models.ApiResponse{Status: "error", Message: "Invalid request body"})
+	var item models.ProductFormatType
+	if err := c.BodyParser(&item); err != nil {
+		return utils.FailResponse(c, "Invalid request body")
+	}
+	if item.TypeName == "" {
+		return utils.FailResponse(c, "Type name is required")
 	}
 
-	query := `
-		INSERT INTO tb_product_format_type (format_name, description, update_by)
-		VALUES (@FormatName, @Description, @UpdateBy)
-	`
-	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
-		func(tx *sql.Tx) error {
-			_, err := tx.Exec(query,
-				sql.Named("FormatName", ft.FormatName),
-				sql.Named("Description", ft.Description),
-				sql.Named("UpdateBy", ft.UpdateBy),
-			)
-			return err
-		},
-	})
-	if err != nil {
-		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to insert product format type"})
+	steps := []utils.TransactionStep{
+		{Name: "InsertProductFormatType", Query: "INSERT INTO tb_product_format_type (type_name, description, update_by) VALUES (?, ?, ?)",
+			Args: []interface{}{item.TypeName, item.Description, item.UpdateBy}},
 	}
-
-	return c.Status(201).JSON(models.ApiResponse{Status: "success", Message: "Product format type inserted successfully"})
+	if err := utils.ExecuteTransaction(steps); err != nil {
+		return utils.ErrorResponse(c, err.Error())
+	}
+	return utils.SuccessResponse(c, "Product format type added successfully", fiber.Map{"type_name": item.TypeName})
 }
 
 func UpdateProductFormatTypeByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	var ft models.ProductFormatType
-	if err := c.BodyParser(&ft); err != nil {
-		return c.Status(400).JSON(models.ApiResponse{Status: "error", Message: "Invalid request body"})
+	var item models.ProductFormatType
+	if err := c.BodyParser(&item); err != nil {
+		return utils.FailResponse(c, "Invalid request body")
 	}
 
-	query := `
-		UPDATE tb_product_format_type
-		SET format_name = COALESCE(NULLIF(@FormatName, ''), format_name),
-		    description = COALESCE(@Description, description),
-		    update_by = @UpdateBy,
-		    is_active = COALESCE(@IsActive, is_active)
-		WHERE product_format_type_id = @ID AND is_delete = 0
-	`
-	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
-		func(tx *sql.Tx) error {
-			res, err := tx.Exec(query,
-				sql.Named("FormatName", ft.FormatName),
-				sql.Named("Description", ft.Description),
-				sql.Named("UpdateBy", ft.UpdateBy),
-				sql.Named("IsActive", ft.IsActive),
-				sql.Named("ID", id),
-			)
-			if err != nil {
-				return err
-			}
-			rows, err := res.RowsAffected()
-			if err != nil {
-				return err
-			}
-			if rows == 0 {
-				return errors.New("product format type not found")
-			}
-			return nil
-		},
-	})
-	if err != nil {
-		if err.Error() == "product format type not found" {
-			return c.Status(404).JSON(models.ApiResponse{
-				Status:  "error",
-				Message: "Product format type not found",
-				Data:    nil,
-			})
-		}
-		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to update product format type"})
+	steps := []utils.TransactionStep{
+		{Name: "UpdateProductFormatType", Query: "UPDATE tb_product_format_type SET type_name = COALESCE(NULLIF(?, ''), type_name), description = COALESCE(?, description), update_by = ? WHERE product_format_type_id = ? AND is_delete = 0",
+			Args: []interface{}{item.TypeName, item.Description, item.UpdateBy, id}},
 	}
-
-	return c.JSON(models.ApiResponse{Status: "success", Message: "Product format type updated successfully"})
+	if err := utils.ExecuteTransaction(steps); err != nil {
+		return utils.ErrorResponse(c, err.Error())
+	}
+	return utils.SuccessResponse(c, "Product format type updated successfully", fiber.Map{"product_format_type_id": id})
 }
 
 func DeleteProductFormatTypeByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	query := `
-		UPDATE tb_product_format_type
-		SET is_delete = 1,
-		    update_date = CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'SE Asia Standard Time' AS DATETIME)
-		WHERE product_format_type_id = @ID
-	`
-	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
-		func(tx *sql.Tx) error {
-			_, err := tx.Exec(query, sql.Named("ID", id))
-			return err
-		},
-	})
-	if err != nil {
-		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to soft delete product format type"})
+	username := c.Query("user", "UNKNOWN")
+	steps := []utils.TransactionStep{
+		{Name: "DeleteProductFormatType", Query: "UPDATE tb_product_format_type SET is_delete = 1, update_by = ? WHERE product_format_type_id = ?", Args: []interface{}{username, id}},
 	}
-
-	return c.JSON(models.ApiResponse{Status: "success", Message: "Product format type deleted (soft)"})
+	if err := utils.ExecuteTransaction(steps); err != nil {
+		return utils.ErrorResponse(c, err.Error())
+	}
+	return utils.SuccessResponse(c, "Product format type deleted successfully", nil)
 }
 
 func RemoveProductFormatTypeByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	query := `DELETE FROM tb_product_format_type WHERE product_format_type_id = @ID`
-	err := utils.ExecuteTransaction(config.DB, []func(tx *sql.Tx) error{
-		func(tx *sql.Tx) error {
-			_, err := tx.Exec(query, sql.Named("ID", id))
-			return err
-		},
-	})
-	if err != nil {
-		log.Println(err)
-		return c.Status(500).JSON(models.ApiResponse{Status: "error", Message: "Failed to hard delete product format type"})
+	steps := []utils.TransactionStep{
+		{Name: "RemoveProductFormatType", Query: "DELETE FROM tb_product_format_type WHERE product_format_type_id = ?", Args: []interface{}{id}},
 	}
-
-	return c.JSON(models.ApiResponse{Status: "success", Message: "Product format type deleted (hard)"})
+	if err := utils.ExecuteTransaction(steps); err != nil {
+		return utils.ErrorResponse(c, err.Error())
+	}
+	return utils.SuccessResponse(c, "Product format type removed permanently", nil)
 }
