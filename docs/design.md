@@ -1,8 +1,8 @@
-# Design Document — PenbunAPI v3.0.0
+# Design Document — PenbunAPI v3.1.0
 
 ## Overview
 
-PenbunAPI v3.0.0 is a Go/Fiber RESTful backend for a book and stationery distribution company (Penbun). It follows a **Thin API** pattern: all business-key generation and `update_date` timestamping are handled by SQL Server triggers, keeping controller code small and uniform. The API's responsibility is routing, request validation, transactional execution, and returning consistent JSON.
+PenbunAPI v3.1.0 is a Go/Fiber RESTful backend for a book and stationery distribution company (Penbun). It follows a **Thin API** pattern: all business-key generation and `update_date` timestamping are handled by SQL Server triggers, keeping controller code small and uniform. The API's responsibility is routing, request validation, transactional execution, and returning consistent JSON.
 
 Every entity module exposes exactly **8 standard endpoints** (Select All, Select Page, Select By ID, Select By Name, Insert, Update, Soft Delete, Hard Delete). All mutating operations are wrapped in `executeTransaction()`. All responses use `models.ApiResponse`. Protected routes live under `/api/v1/protected/[module]/` and require a valid JWT bearer token.
 
@@ -81,6 +81,10 @@ PenbunAPI/
 │   ├── env.go                      # Env var loader + validation
 │   └── logger.go                   # Transaction logger setup
 │
+├── middleware/
+│   ├── jwt.go                      # JWT validation + blacklist check
+│   └── error.go                    # Global error handler
+│
 ├── controllers/
 │   ├── auth.go                     # Login / Logout
 │   ├── company.go                  # tb_company
@@ -121,10 +125,8 @@ PenbunAPI/
 │
 ├── routes/
 │   ├── public.go                   # /api/v1/public/* (no auth)
-│   └── v1.go                       # /api/v1/protected/* (JWT group)
-│
-├── middleware/
-│   └── jwt.go                      # JWT validation + blacklist check
+│   ├── v1.go                       # /api/v1/protected/* (JWT group)
+│   └── v2.go                       # /api/v2/* (placeholder)
 │
 ├── utils/
 │   └── transaction.go              # executeTransaction() wrapper
@@ -141,11 +143,13 @@ func main() {
     // 2. Validate required env vars (exit non-zero if missing)
     // 3. Connect to SQL Server (config.ConnectDB)
     // 4. Init logger (config.InitLogger)
-    // 5. Create Fiber app with error handler
+    // 5. Create Fiber app with config (ServerHeader, AppName, CaseSensitive,
+    //    StrictRouting, ErrorHandler, BodyLimit, timeouts, etc.)
     // 6. Register public routes (routes.SetupPublicRoutes)
     // 7. Register protected routes with JWT middleware (routes.SetupV1Routes)
-    // 8. Register 404 handler
-    // 9. Listen on PORT with graceful shutdown (os.Signal / SIGTERM)
+    // 8. Register v2 placeholder routes (routes.SetupV2Routes)
+    // 9. Print registered routes
+    // 10. Listen on PORT with graceful shutdown (os.Signal / SIGTERM)
 }
 ```
 
@@ -859,30 +863,39 @@ Login success response:
 ### Fiber Error Handler (registered in `main.go`)
 
 ```go
-app := fiber.New(fiber.Config{
-    ErrorHandler: func(c *fiber.Ctx, err error) error {
-        code := fiber.StatusInternalServerError
-        if e, ok := err.(*fiber.Error); ok {
-            code = e.Code
-        }
-        return c.Status(code).JSON(models.ApiResponse{
-            Status:  "error",
-            Message: "Internal server error",
-        })
-    },
-})
-```
-
-### 404 Handler
-
-```go
-app.Use(func(c *fiber.Ctx) error {
-    return c.Status(404).JSON(models.ApiResponse{
-        Status:  "fail",
-        Message: "Route not found",
+// Defined in middleware/error.go
+func GlobalErrorHandler(c *fiber.Ctx, err error) error {
+    code := fiber.StatusInternalServerError
+    if e, ok := err.(*fiber.Error); ok {
+        code = e.Code
+    }
+    return c.Status(code).JSON(models.ApiResponse{
+        Status:  "error",
+        Message: err.Error(),
     })
+}
+```
+
+Registered in `main.go` via `fiber.Config`:
+```go
+app := fiber.New(fiber.Config{
+    ServerHeader:          "PENBUN Powered by Fiber",
+    AppName:               "API v3.1.0",
+    CaseSensitive:         true,
+    StrictRouting:         true,
+    EnablePrintRoutes:     false,
+    DisableStartupMessage: true,
+    ReadTimeout:           30 * time.Second,
+    WriteTimeout:          30 * time.Second,
+    IdleTimeout:           60 * time.Second,
+    BodyLimit:             20 * 1024 * 1024,
+    ErrorHandler:          middleware.GlobalErrorHandler,
 })
 ```
+
+### 404 Handler (handled by Fiber's default when no route matches)
+
+No explicit 404 handler is registered — the global error handler catches unmatched routes and returns a consistent JSON error.
 
 ### FK Existence Check Pattern
 

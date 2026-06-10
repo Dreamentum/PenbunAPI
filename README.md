@@ -1,4 +1,4 @@
-# PenbunAPI v3.0.0
+# PenbunAPI v3.1.0
 
 RESTful API for managing distribution and supply of books and stationery — built with Go + Fiber + MSSQL.
 
@@ -8,6 +8,7 @@ RESTful API for managing distribution and supply of books and stationery — bui
 
 - **Authentication** – JWT login/logout with bcrypt password hashing + token blacklist
 - **16 Master Data Modules** – 8 standard CRUD functions per module (128 endpoints)
+- **Global Error Handler** – Centralized `middleware.GlobalErrorHandler` for consistent JSON error responses
 - **Transaction Safety** – `utils.ExecuteTransaction()` with panic recovery + step logging
 - **Partial Updates** – `COALESCE(NULLIF(...))` pattern for PATCH-like PUT
 - **Soft Delete** – `is_delete = 1` with `update_by` tracking
@@ -16,14 +17,14 @@ RESTful API for managing distribution and supply of books and stationery — bui
 - **Consistent Response** – `{status, message, data}` across all endpoints
 - **Audit Logging** – Transaction steps logged to `logs/transaction.log`
 - **Graceful Shutdown** – Safe server stop on SIGINT/SIGTERM
-- **Testing** – 105 unit tests with race detection
+- **Testing** – 109 unit tests with race detection
 
 ---
 
 ## Quick Start
 
 ```bash
-# Prerequisites: Go 1.19+, MSSQL Server
+# Prerequisites: Go 1.21+, MSSQL Server
 
 git clone <repo> && cd PenbunAPI
 go mod tidy
@@ -42,12 +43,15 @@ go run main.go
 
 ```
 PenbunAPI/
-├── main.go                    # Entry point + graceful shutdown
+├── main.go                    # Entry point + Fiber config + graceful shutdown
 ├── config/
 │   ├── env.go                 # Environment variable loading
 │   ├── database.go            # MSSQL connection pool
 │   ├── blacklist.go           # Thread-safe token blacklist
 │   └── logger.go              # Transaction log file
+├── middleware/
+│   ├── jwt.go                 # JWT Bearer validation
+│   └── error.go               # Global error handler
 ├── controllers/
 │   ├── auth.go                # Login / Logout
 │   ├── publisher.go           # 8 CRUD functions
@@ -73,15 +77,13 @@ PenbunAPI/
 │   ├── public.go              # /api/v1/public/*
 │   ├── v1.go                  # /api/v1/protected/*
 │   └── v2.go                  # Placeholder for future
-├── middleware/
-│   └── jwt.go                 # JWT Bearer validation
 ├── utils/
 │   ├── transaction.go         # ExecuteTransaction with rollback
 │   └── response.go            # JSON response helpers
 ├── logs/                      # Transaction audit logs
 ├── docs/                      # Documentation
 ├── .env                       # Environment variables
-├── *_test.go                  # 105 tests
+├── *_test.go                  # 109 tests
 └── go.mod
 ```
 
@@ -185,7 +187,7 @@ go test -coverprofile=coverage.out ./... && go tool cover -html=coverage.out
 go test -tags=integration ./...
 ```
 
-**Current:** 105 tests, 0 failed, 0 races across 6 packages.
+**Current:** 109 tests, 0 failed, 0 races across 6 packages.
 
 ---
 
@@ -195,6 +197,8 @@ go test -tags=integration ./...
 |---------|---------|
 | [Fiber v2](https://gofiber.io/) | Web framework |
 | [go-mssqldb](https://github.com/denisenkom/go-mssqldb) | MSSQL driver |
+| [Recover](https://docs.gofiber.io/api/middleware/recover) | Panic recovery middleware |
+| [CORS](https://docs.gofiber.io/api/middleware/cors) | Cross-origin resource sharing |
 | [golang-jwt v5](https://github.com/golang-jwt/jwt) | JWT auth |
 | [bcrypt](https://pkg.go.dev/golang.org/x/crypto/bcrypt) | Password hashing |
 | [godotenv](https://github.com/joho/godotenv) | .env loader |

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-PenbunAPI v3.0.0 is a complete Go (Golang) RESTful backend API for a book and stationery distribution company (Penbun). It provides full CRUD operations for every database table in the PENBUN SQL Server database, secured with JWT authentication. The architecture follows a **Thin API** pattern: business rules, ID generation, and timestamps are delegated to DB triggers, while the API handles request routing, validation, transactional execution, and consistent JSON responses.
+PenbunAPI v3.1.0 is a complete Go (Golang) RESTful backend API for a book and stationery distribution company (Penbun). It provides full CRUD operations for every database table in the PENBUN SQL Server database, secured with JWT authentication. The architecture follows a **Thin API** pattern: business rules, ID generation, and timestamps are delegated to DB triggers, while the API handles request routing, validation, transactional execution, and consistent JSON responses.
 
 Every entity module exposes 8 standard endpoints. All mutating operations are wrapped in `executeTransaction()`. All responses conform to `models.ApiResponse`. Protected routes live under `/api/v1/protected/[module]` and require a valid JWT bearer token.
 
@@ -10,7 +10,7 @@ Every entity module exposes 8 standard endpoints. All mutating operations are wr
 
 ## Glossary
 
-- **API**: The PenbunAPI v3.0.0 Go/Fiber application.
+- **API**: The PenbunAPI v3.1.0 Go/Fiber application.
 - **DB**: Microsoft SQL Server PENBUN database.
 - **JWT**: JSON Web Token used for authentication.
 - **Trigger**: SQL Server trigger that auto-generates IDs and sets `update_date`.

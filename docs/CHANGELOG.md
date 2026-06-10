@@ -2,6 +2,18 @@
 
 All notable changes to PenbunAPI will be documented in this file.
 
+## [3.1.0] - 2026-06-10
+
+### Added
+- Global error handler middleware (`middleware/error.go`) — centralized `fiber.Error` handling with consistent JSON responses
+- Fiber config enhancements: `ServerHeader`, `AppName`, `CaseSensitive`, `StrictRouting`, `BodyLimit`, `IdleTimeout`, `ErrorHandler`
+- `routes/v2.go` — placeholder for future v2 endpoints
+- Route printing on startup for debugging
+
+### Changed
+- `main.go` Fiber config: `DisableStartupMessage: true`, manual route printing instead of `EnablePrintRoutes`
+- All docs versioned to v3.1.0
+
 ## [3.0.0] - 2026-06-10
 
 ### Added
@@ -48,7 +60,6 @@ All notable changes to PenbunAPI will be documented in this file.
 - Global error handler middleware
 - Receive Note / Receive Item APIs (Layer 5)
 - Order / Order Item APIs (Layer 6)
-- Global error handler middleware
 - Role-based access control (RBAC)
 - Performance optimizations (Prefork, Redis cache, Connection Pool tuning)
 - Integration tests against live database

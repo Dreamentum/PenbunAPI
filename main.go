@@ -29,7 +29,7 @@ func main() {
 
 app := fiber.New(fiber.Config{
 	ServerHeader:          "PENBUN Powered by Fiber",
-    AppName:               "API v3.0.0",
+    AppName:               "API v3.1.0",
     Prefork:               false,
     CaseSensitive:         true,
     StrictRouting:         true,

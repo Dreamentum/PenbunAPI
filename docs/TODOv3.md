@@ -1,6 +1,6 @@
-# ✅ PenbunAPI Development Checklist (v3.0.0)
+# ✅ PenbunAPI Development Checklist (v3.1.0)
 
-> **สถานะปัจจุบัน:** v3.0.0 — สร้าง Backend ใหม่ทั้งหมดด้วย Go + Fiber + MSSQL  
+> **สถานะปัจจุบัน:** v3.1.0 — สร้าง Backend ใหม่ทั้งหมดด้วย Go + Fiber + MSSQL  
 > **เป้าหมาย:** ทำให้ API รองรับ Database Schema v2.1.0 100% พร้อม Unit Testing และ QA
 
 ---
@@ -16,16 +16,16 @@
 | ✅ Done | **Token Blacklist** | `config/blacklist.go` — `sync.RWMutex` protects in-memory blacklist map |
 | ✅ Done | **Graceful Shutdown** | `main.go` — จับ `SIGINT`/`SIGTERM` ปิด server + log file |
 | ✅ Done | **Transaction Audit Log** | `utils/transaction.go` — บันทึก TX start/step/commit/rollback พร้อม duration |
-| ⬜ Pending | **Global Error Handler** | ยังไม่มี centralized error handler middleware (ปัจจุบันจับ error ที่ controller level) |
+| ✅ Done | **Global Error Handler** | `middleware/error.go` — centralized error handler ผ่าน `fiber.Config.ErrorHandler` |
 | ⬜ Pending | **Role/Permission** | ยังไม่มีระบบ Role-Based Access Control |
 
 **Strukture โปรเจกต์:**
 ```
 PenbunAPI/
-├── main.go                    # Entry point, graceful shutdown
+├── main.go                    # Entry point, graceful shutdown, Fiber config
 ├── config/                    # env, database, logger, blacklist
 ├── controllers/               # 17 modules × 8 functions = 136 handlers
-├── middleware/                 # JWT middleware
+├── middleware/                 # JWT middleware + global error handler
 ├── models/                    # 16 entity structs + ApiResponse
 ├── routes/                    # public, v1 (protected), v2
 ├── utils/                     # transaction manager, response helpers
@@ -142,7 +142,7 @@ Master Data พื้นฐาน — ทุก module มี 8 ฟังก์�
 
 | Layer | สถานะ |
 |-------|--------|
-| Layer 1: System & Infrastructure | 7/9 ✅ (missing: global error handler, RBAC) |
+| Layer 1: System & Infrastructure | 8/9 ✅ (missing: RBAC) |
 | Layer 2: Independent Master Data | 7/7 ✅ |
 | Layer 3: Dependent Master Data | 8/8 ✅ |
 | Layer 4: Product Core | 1/1 ✅ |
@@ -153,4 +153,4 @@ Master Data พื้นฐาน — ทุก module มี 8 ฟังก์�
 
 **Total API Endpoints:** 136 (17 modules × 8 functions)  
 **Total Test Suites:** 109 tests, 0 failed, 0 races  
-**Next Priority:** Global Error Handler → Integration Tests → Inbound Transaction (Receive)
+**Next Priority:** Integration Tests → Inbound Transaction (Receive) → RBAC

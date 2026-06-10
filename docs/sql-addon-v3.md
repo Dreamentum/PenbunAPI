@@ -91,7 +91,7 @@ These 3 tables are lookup/reference tables that only need a technical `BIT` flag
 
 ## Migration for Already-Migrated Tables
 
-The following tables had `id_status` renamed to `is_active` in the v3.0.0 migration. If they now need `id_status` as a business column, add it back as a **new column** (don't rename `is_active` back):
+The following tables had `id_status` renamed to `is_active` in the v3.1.0 migration. If they now need `id_status` as a business column, add it back as a **new column** (don't rename `is_active` back):
 
 ```sql
 -- tb_customer_type, tb_reference, tb_users: keep is_active, add id_status only if needed
