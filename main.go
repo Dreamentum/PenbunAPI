@@ -14,6 +14,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"PenbunAPI/config"
+	"PenbunAPI/middleware"
 	"PenbunAPI/routes"
 )
 
@@ -26,10 +27,24 @@ func main() {
 	config.ConnectDB(config.Cfg)
 	config.InitLogger(config.Cfg)
 
-	app := fiber.New(fiber.Config{
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 30 * time.Second,
-	})
+app := fiber.New(fiber.Config{
+	ServerHeader:          "PENBUN Powered by Fiber",
+    AppName:               "API v3.0.0",
+    Prefork:               false,
+    CaseSensitive:         true,
+    StrictRouting:         true,
+
+    EnablePrintRoutes:     false,
+    DisableStartupMessage: true,
+
+    ReadTimeout:           30 * time.Second,
+    WriteTimeout:          30 * time.Second,
+    IdleTimeout:           60 * time.Second,
+
+    BodyLimit:             20 * 1024 * 1024,
+
+    ErrorHandler:          middleware.GlobalErrorHandler,
+})
 
 	app.Use(recover.New())
 	app.Use(cors.New(cors.Config{
