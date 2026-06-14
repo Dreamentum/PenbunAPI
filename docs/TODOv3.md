@@ -1,6 +1,6 @@
-# ✅ PenbunAPI Development Checklist (v3.1.0)
+# ✅ PenbunAPI Development Checklist (v3.2.0)
 
-> **สถานะปัจจุบัน:** v3.1.0 — สร้าง Backend ใหม่ทั้งหมดด้วย Go + Fiber + MSSQL  
+> **สถานะปัจจุบัน:** v3.2.0 — สร้าง Backend ใหม่ทั้งหมดด้วย Go + Fiber + MSSQL  
 > **เป้าหมาย:** ทำให้ API รองรับ Database Schema v2.1.0 100% พร้อม Unit Testing และ QA
 
 ---

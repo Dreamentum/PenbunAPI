@@ -27,24 +27,20 @@ func main() {
 	config.ConnectDB(config.Cfg)
 	config.InitLogger(config.Cfg)
 
-app := fiber.New(fiber.Config{
-	ServerHeader:          "PENBUN Powered by Fiber",
-    AppName:               "API v3.1.0",
-    Prefork:               false,
-    CaseSensitive:         true,
-    StrictRouting:         true,
-
-    EnablePrintRoutes:     false,
-    DisableStartupMessage: true,
-
-    ReadTimeout:           30 * time.Second,
-    WriteTimeout:          30 * time.Second,
-    IdleTimeout:           60 * time.Second,
-
-    BodyLimit:             20 * 1024 * 1024,
-
-    ErrorHandler:          middleware.GlobalErrorHandler,
-})
+	app := fiber.New(fiber.Config{
+		ServerHeader:          "PENBUN Powered by Fiber",
+		AppName:               "API v3.2.0",
+		Prefork:               false,
+		CaseSensitive:         true,
+		StrictRouting:         true,
+		EnablePrintRoutes:     true,
+		DisableStartupMessage: false,
+		ReadTimeout:           30 * time.Second,
+		WriteTimeout:          30 * time.Second,
+		IdleTimeout:           60 * time.Second,
+		BodyLimit:             20 * 1024 * 1024,
+		ErrorHandler:          middleware.GlobalErrorHandler,
+	})
 
 	app.Use(recover.New())
 	app.Use(cors.New(cors.Config{

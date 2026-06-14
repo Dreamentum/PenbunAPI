@@ -10,10 +10,16 @@ import (
 )
 
 type TransactionStep struct {
-	Name      string
-	Query     string
-	Args      []interface{}
+	Name         string
+	Query        string
+	Args         []interface{}
 	RowsAffected int64
+}
+
+func txLog(format string, args ...interface{}) {
+	if config.TransactionLogger != nil {
+		config.TransactionLogger.Printf(format, args...)
+	}
 }
 
 func ExecuteTransaction(steps []TransactionStep) error {
@@ -23,12 +29,12 @@ func ExecuteTransaction(steps []TransactionStep) error {
 	}
 
 	start := time.Now()
-	config.TransactionLogger.Printf("TX START | steps=%d", len(steps))
+	txLog("TX START | steps=%d", len(steps))
 
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
-			config.TransactionLogger.Printf("TX ROLLBACK (panic) | duration=%v | panic=%v", time.Since(start), r)
+			txLog("TX ROLLBACK (panic) | duration=%v | panic=%v", time.Since(start), r)
 			log.Printf("Transaction panic recovered: %v", r)
 		}
 	}()
@@ -39,7 +45,7 @@ func ExecuteTransaction(steps []TransactionStep) error {
 		result, err := tx.Exec(step.Query, step.Args...)
 		if err != nil {
 			tx.Rollback()
-			config.TransactionLogger.Printf("TX ROLLBACK | step=%d/%d name=%s duration=%v error=%s",
+			txLog("TX ROLLBACK | step=%d/%d name=%s duration=%v error=%s",
 				i+1, len(steps), step.Name, time.Since(stepStart), err)
 			return fmt.Errorf("step %d (%s): %w", i+1, step.Name, err)
 		}
@@ -47,25 +53,19 @@ func ExecuteTransaction(steps []TransactionStep) error {
 		affected, _ := result.RowsAffected()
 		steps[i].RowsAffected = affected
 
-		config.TransactionLogger.Printf("TX STEP OK | step=%d/%d name=%s duration=%v rows=%d",
+		txLog("TX STEP OK | step=%d/%d name=%s duration=%v rows=%d",
 			i+1, len(steps), step.Name, time.Since(stepStart), affected)
 	}
 
 	if err := tx.Commit(); err != nil {
-		config.TransactionLogger.Printf("TX COMMIT FAIL | duration=%v error=%s", time.Since(start), err)
+		txLog("TX COMMIT FAIL | duration=%v error=%s", time.Since(start), err)
 		return fmt.Errorf("commit transaction: %w", err)
 	}
 
-	config.TransactionLogger.Printf("TX COMMIT OK | duration=%v steps=%d", time.Since(start), len(steps))
+	txLog("TX COMMIT OK | duration=%v steps=%d", time.Since(start), len(steps))
 	return nil
 }
 
 func ScanRow(row *sql.Row, dest ...interface{}) error {
-	if err := row.Scan(dest...); err != nil {
-		if err == sql.ErrNoRows {
-			return nil
-		}
-		return err
-	}
-	return nil
+	return row.Scan(dest...)
 }

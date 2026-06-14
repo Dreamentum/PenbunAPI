@@ -110,6 +110,7 @@ func InsertProduct(c *fiber.Ctx) error {
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
+			panic(r)
 		}
 	}()
 

@@ -59,13 +59,11 @@ func TestInsertWithInvalidBody(t *testing.T) {
 		route   string
 		handler fiber.Handler
 	}{
-		{"Publisher", "/api/v1/protected/publisher/insert", InsertPublisher},
 		{"Book", "/api/v1/protected/book/insert", InsertBook},
 		{"Customer", "/api/v1/protected/customer/insert", InsertCustomer},
 		{"Vendor", "/api/v1/protected/vendor/insert", InsertVendor},
 		{"Discount", "/api/v1/protected/discount/insert", InsertDiscount},
 		{"Warehouse", "/api/v1/protected/warehouse/insert", InsertWarehouse},
-		{"PublisherType", "/api/v1/protected/publisher-type/insert", InsertPublisherType},
 		{"CustomerType", "/api/v1/protected/customer-type/insert", InsertCustomerType},
 		{"VendorType", "/api/v1/protected/vendor-type/insert", InsertVendorType},
 		{"BookType", "/api/v1/protected/book-type/insert", InsertBookType},
@@ -101,7 +99,6 @@ func TestInsertWithEmptyName(t *testing.T) {
 		handler fiber.Handler
 		body    string
 	}{
-		{"Publisher", "/api/v1/protected/publisher/insert", InsertPublisher, `{"publisher_name": ""}`},
 		{"Book", "/api/v1/protected/book/insert", InsertBook, `{"book_name": ""}`},
 		{"Customer", "/api/v1/protected/customer/insert", InsertCustomer, `{"customer_name": ""}`},
 		{"Vendor", "/api/v1/protected/vendor/insert", InsertVendor, `{"vendor_name": ""}`},
@@ -109,7 +106,6 @@ func TestInsertWithEmptyName(t *testing.T) {
 		{"ProductGroup", "/api/v1/protected/product-group/insert", InsertProductGroup, `{"group_name": ""}`},
 		{"ProductCategory", "/api/v1/protected/product-category/insert", InsertProductCategory, `{"category_name": ""}`},
 		{"Discount", "/api/v1/protected/discount/insert", InsertDiscount, `{"discount_name": ""}`},
-		{"PublisherType", "/api/v1/protected/publisher-type/insert", InsertPublisherType, `{"type_name": ""}`},
 		{"CustomerType", "/api/v1/protected/customer-type/insert", InsertCustomerType, `{"type_name": ""}`},
 		{"VendorType", "/api/v1/protected/vendor-type/insert", InsertVendorType, `{"type_name": ""}`},
 		{"BookType", "/api/v1/protected/book-type/insert", InsertBookType, `{"type_name": ""}`},
@@ -142,13 +138,11 @@ func TestUpdateEndpoint_WithInvalidBody(t *testing.T) {
 		route   string
 		handler fiber.Handler
 	}{
-		{"PUT", "/api/v1/protected/publisher/update/P001", UpdatePublisherByID},
 		{"PUT", "/api/v1/protected/book/update/B001", UpdateBookByID},
 		{"PUT", "/api/v1/protected/customer/update/C001", UpdateCustomerByID},
 		{"PUT", "/api/v1/protected/vendor/update/V001", UpdateVendorByID},
 		{"PUT", "/api/v1/protected/discount/update/D001", UpdateDiscountByID},
 		{"PUT", "/api/v1/protected/warehouse/update/W001", UpdateWarehouseByID},
-		{"PUT", "/api/v1/protected/publisher-type/update/PT001", UpdatePublisherTypeByID},
 		{"PUT", "/api/v1/protected/customer-type/update/CT001", UpdateCustomerTypeByID},
 		{"PUT", "/api/v1/protected/vendor-type/update/VT001", UpdateVendorTypeByID},
 	}

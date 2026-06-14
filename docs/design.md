@@ -1,8 +1,8 @@
-# Design Document — PenbunAPI v3.1.0
+# Design Document — PenbunAPI v3.2.0
 
 ## Overview
 
-PenbunAPI v3.1.0 is a Go/Fiber RESTful backend for a book and stationery distribution company (Penbun). It follows a **Thin API** pattern: all business-key generation and `update_date` timestamping are handled by SQL Server triggers, keeping controller code small and uniform. The API's responsibility is routing, request validation, transactional execution, and returning consistent JSON.
+PenbunAPI v3.2.0 is a Go/Fiber RESTful backend for a book and stationery distribution company (Penbun). It follows a **Thin API** pattern: all business-key generation and `update_date` timestamping are handled by SQL Server triggers, keeping controller code small and uniform. The API's responsibility is routing, request validation, transactional execution, and returning consistent JSON.
 
 Every entity module exposes exactly **8 standard endpoints** (Select All, Select Page, Select By ID, Select By Name, Insert, Update, Soft Delete, Hard Delete). All mutating operations are wrapped in `executeTransaction()`. All responses use `models.ApiResponse`. Protected routes live under `/api/v1/protected/[module]/` and require a valid JWT bearer token.
 
@@ -880,7 +880,7 @@ Registered in `main.go` via `fiber.Config`:
 ```go
 app := fiber.New(fiber.Config{
     ServerHeader:          "PENBUN Powered by Fiber",
-    AppName:               "API v3.1.0",
+    AppName:               "API v3.2.0",
     CaseSensitive:         true,
     StrictRouting:         true,
     EnablePrintRoutes:     false,

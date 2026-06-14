@@ -22,3 +22,41 @@
 [TX] 2026/06/10 02:01:41 auth.go:54: LOGIN OK | user=jack level=HACKER
 [TX] 2026/06/10 02:01:59 auth.go:54: LOGIN OK | user=jack level=HACKER
 [TX] 2026/06/10 02:08:21 auth.go:54: LOGIN OK | user=admin level=ADMIN
+[TX] 2026/06/10 17:33:49 auth.go:54: LOGIN OK | user=admin level=ADMIN
+[TX] 2026/06/10 17:54:15 auth.go:31: LOGIN FAIL | user=test | error=user not found
+[TX] 2026/06/10 17:54:22 auth.go:31: LOGIN FAIL | user=wrong | error=user not found
+[TX] 2026/06/10 17:54:26 auth.go:31: LOGIN FAIL | user=wrong | error=user not found
+[TX] 2026/06/10 18:11:29 auth.go:54: LOGIN OK | user=admin level=ADMIN
+[TX] 2026/06/10 18:12:39 auth.go:54: LOGIN OK | user=admin level=ADMIN
+[TX] 2026/06/10 18:13:39 auth.go:54: LOGIN OK | user=admin level=ADMIN
+[TX] 2026/06/10 18:15:44 auth.go:54: LOGIN OK | user=admin level=ADMIN
+[TX] 2026/06/10 18:22:01 auth.go:54: LOGIN OK | user=admin level=ADMIN
+[TX] 2026/06/10 18:23:51 auth.go:54: LOGIN OK | user=admin level=ADMIN
+[TX] 2026/06/10 18:23:51 auth.go:70: LOGOUT OK | token blacklisted
+[TX] 2026/06/10 18:31:15 auth.go:54: LOGIN OK | user=admin level=ADMIN
+[TX] 2026/06/10 18:31:20 auth.go:70: LOGOUT OK | token blacklisted
+[TX] 2026/06/10 18:45:26 auth.go:54: LOGIN OK | user=admin level=ADMIN
+[TX] 2026/06/10 18:45:31 auth.go:70: LOGOUT OK | token blacklisted
+[TX] 2026/06/10 18:51:57 auth.go:54: LOGIN OK | user=admin level=ADMIN
+[TX] 2026/06/10 18:52:23 auth.go:70: LOGOUT OK | token blacklisted
+[TX] 2026/06/10 18:52:37 auth.go:54: LOGIN OK | user=admin level=ADMIN
+[TX] 2026/06/10 18:52:49 auth.go:54: LOGIN OK | user=admin level=ADMIN
+[TX] 2026/06/10 21:18:45 auth.go:70: LOGOUT OK | token blacklisted
+[TX] 2026/06/10 21:19:01 auth.go:54: LOGIN OK | user=admin level=ADMIN
+[TX] 2026/06/10 22:00:24 auth.go:70: LOGOUT OK | token blacklisted
+[TX] 2026/06/10 22:08:30 auth.go:54: LOGIN OK | user=admin level=ADMIN
+[TX] 2026/06/10 22:09:17 auth.go:70: LOGOUT OK | token blacklisted
+[TX] 2026/06/10 22:40:07 auth.go:54: LOGIN OK | user=admin level=ADMIN
+[TX] 2026/06/10 22:40:48 auth.go:54: LOGIN OK | user=admin level=ADMIN
+[TX] 2026/06/10 22:44:13 auth.go:70: LOGOUT OK | token blacklisted
+[TX] 2026/06/10 22:44:29 auth.go:54: LOGIN OK | user=admin level=ADMIN
+[TX] 2026/06/10 22:44:43 auth.go:54: LOGIN OK | user=admin level=ADMIN
+[TX] 2026/06/10 22:45:05 auth.go:54: LOGIN OK | user=admin level=ADMIN
+[TX] 2026/06/10 22:45:27 auth.go:54: LOGIN OK | user=admin level=ADMIN
+[TX] 2026/06/10 22:46:20 auth.go:54: LOGIN OK | user=admin level=ADMIN
+[TX] 2026/06/10 22:51:17 auth.go:70: LOGOUT OK | token blacklisted
+[TX] 2026/06/10 22:55:55 auth.go:54: LOGIN OK | user=admin level=ADMIN
+[TX] 2026/06/10 22:59:07 auth.go:70: LOGOUT OK | token blacklisted
+[TX] 2026/06/10 22:59:19 auth.go:54: LOGIN OK | user=admin level=ADMIN
+[TX] 2026/06/10 23:13:03 auth.go:36: LOGIN FAIL | user=admin | error=invalid password
+[TX] 2026/06/10 23:13:12 auth.go:54: LOGIN OK | user=admin level=ADMIN

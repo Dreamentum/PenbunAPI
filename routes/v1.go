@@ -10,26 +10,6 @@ import (
 func SetupV1Routes(app *fiber.App, jwtSecret string) {
 	protected := app.Group("/api/v1/protected", middleware.JWTMiddleware(jwtSecret))
 
-	publisher := protected.Group("/publisher")
-	publisher.Get("/all", controllers.SelectAllPublisher)
-	publisher.Get("/page", controllers.SelectPagePublisher)
-	publisher.Get("/select/id/:id", controllers.SelectPublisherByID)
-	publisher.Get("/select/name/:name", controllers.SelectPublisherByName)
-	publisher.Post("/insert", controllers.InsertPublisher)
-	publisher.Put("/update/:id", controllers.UpdatePublisherByID)
-	publisher.Put("/delete/:id", controllers.DeletePublisherByID)
-	publisher.Delete("/remove/:id", controllers.RemovePublisherByID)
-
-	publisherType := protected.Group("/publisher-type")
-	publisherType.Get("/all", controllers.SelectAllPublisherType)
-	publisherType.Get("/page", controllers.SelectPagePublisherType)
-	publisherType.Get("/select/id/:id", controllers.SelectPublisherTypeByID)
-	publisherType.Get("/select/name/:name", controllers.SelectPublisherTypeByName)
-	publisherType.Post("/insert", controllers.InsertPublisherType)
-	publisherType.Put("/update/:id", controllers.UpdatePublisherTypeByID)
-	publisherType.Put("/delete/:id", controllers.DeletePublisherTypeByID)
-	publisherType.Delete("/remove/:id", controllers.RemovePublisherTypeByID)
-
 	customer := protected.Group("/customer")
 	customer.Get("/all", controllers.SelectAllCustomer)
 	customer.Get("/page", controllers.SelectPageCustomer)

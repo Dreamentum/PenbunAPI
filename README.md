@@ -1,4 +1,4 @@
-# PenbunAPI v3.1.0
+# PenbunAPI v3.2.0
 
 RESTful API for managing distribution and supply of books and stationery — built with Go + Fiber + MSSQL.
 
@@ -7,7 +7,7 @@ RESTful API for managing distribution and supply of books and stationery — bui
 ## Features
 
 - **Authentication** – JWT login/logout with bcrypt password hashing + token blacklist
-- **16 Master Data Modules** – 8 standard CRUD functions per module (128 endpoints)
+- **14 Master Data Modules** – 8 standard CRUD functions per module (112 endpoints)
 - **Global Error Handler** – Centralized `middleware.GlobalErrorHandler` for consistent JSON error responses
 - **Transaction Safety** – `utils.ExecuteTransaction()` with panic recovery + step logging
 - **Partial Updates** – `COALESCE(NULLIF(...))` pattern for PATCH-like PUT
@@ -17,7 +17,7 @@ RESTful API for managing distribution and supply of books and stationery — bui
 - **Consistent Response** – `{status, message, data}` across all endpoints
 - **Audit Logging** – Transaction steps logged to `logs/transaction.log`
 - **Graceful Shutdown** – Safe server stop on SIGINT/SIGTERM
-- **Testing** – 109 unit tests with race detection
+- **Testing** – 73 unit tests with race detection
 
 ---
 
@@ -54,8 +54,6 @@ PenbunAPI/
 │   └── error.go               # Global error handler
 ├── controllers/
 │   ├── auth.go                # Login / Logout
-│   ├── publisher.go           # 8 CRUD functions
-│   ├── publisherType.go
 │   ├── customer.go
 │   ├── customerType.go
 │   ├── vendor.go
@@ -83,7 +81,7 @@ PenbunAPI/
 ├── logs/                      # Transaction audit logs
 ├── docs/                      # Documentation
 ├── .env                       # Environment variables
-├── *_test.go                  # 109 tests
+├── *_test.go                  # 73 tests
 └── go.mod
 ```
 
@@ -117,8 +115,6 @@ Each module has 8 endpoints under `/api/v1/protected/{module}`:
 
 | Module | Endpoint | Table |
 |--------|----------|-------|
-| Publisher | `/publisher/*` | `tb_publisher` |
-| Publisher Type | `/publisher-type/*` | `tb_publisher_type` |
 | Customer | `/customer/*` | `tb_customer` |
 | Customer Type | `/customer-type/*` | `tb_customer_type` |
 | Vendor | `/vendor/*` | `tb_vendor` |
@@ -187,7 +183,7 @@ go test -coverprofile=coverage.out ./... && go tool cover -html=coverage.out
 go test -tags=integration ./...
 ```
 
-**Current:** 109 tests, 0 failed, 0 races across 6 packages.
+**Current:** 73 tests, 0 failed, 0 races across 6 packages.
 
 ---
 

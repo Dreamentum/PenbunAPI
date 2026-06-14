@@ -28,31 +28,6 @@ func initIntegrationDB() {
 	config.InitLogger(cfg)
 }
 
-func TestIntegration_InsertAndSelectPublisher(t *testing.T) {
-	initIntegrationDB()
-
-	app := fiber.New()
-	jwtMW := middleware.JWTMiddleware(config.Cfg.JWTSecret)
-	api := app.Group("/api/v1/protected", jwtMW)
-	api.Post("/publisher/insert", InsertPublisher)
-	api.Get("/publisher/all", SelectAllPublisher)
-
-	token := generateIntegrationToken()
-
-	body := strings.NewReader(`{"publisher_name":"INTEGRATION TEST PUB","update_by":"TESTER"}`)
-	req := httptest.NewRequest("POST", "/api/v1/protected/publisher/insert", body)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
-
-	resp, err := app.Test(req)
-	require.NoError(t, err)
-	assert.Equal(t, 200, resp.StatusCode)
-
-	var result map[string]interface{}
-	json.NewDecoder(resp.Body).Decode(&result)
-	assert.Equal(t, "success", result["status"])
-}
-
 func TestIntegration_InsertAndSelectCustomer(t *testing.T) {
 	initIntegrationDB()
 
@@ -109,24 +84,6 @@ func TestIntegration_InsertAndSelectBook(t *testing.T) {
 	body := strings.NewReader(`{"book_name":"INTEGRATION TEST BOOK","update_by":"TESTER"}`)
 	req := httptest.NewRequest("POST", "/api/v1/protected/book/insert", body)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
-
-	resp, err := app.Test(req)
-	require.NoError(t, err)
-	assert.Equal(t, 200, resp.StatusCode)
-}
-
-func TestIntegration_PublisherPagination(t *testing.T) {
-	initIntegrationDB()
-
-	app := fiber.New()
-	jwtMW := middleware.JWTMiddleware(config.Cfg.JWTSecret)
-	api := app.Group("/api/v1/protected", jwtMW)
-	api.Get("/publisher/page", SelectPagePublisher)
-
-	token := generateIntegrationToken()
-
-	req := httptest.NewRequest("GET", "/api/v1/protected/publisher/page?page=1&limit=5", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 
 	resp, err := app.Test(req)

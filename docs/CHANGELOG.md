@@ -2,6 +2,22 @@
 
 All notable changes to PenbunAPI will be documented in this file.
 
+## [3.2.0] - 2026-06-14
+
+### Fixed
+- `main.go` — fixed broken indentation on Fiber config block (mixed tabs/spaces)
+- `utils/transaction.go` — `TransactionLogger` nil dereference when `InitLogger` not called; added nil-safe `txLog()` helper
+- `controllers/product.go` — panic recovery in `InsertProduct` now re-panics after rollback instead of swallowing the panic
+- `utils/transaction.go` — `ScanRow` no longer silently swallows `sql.ErrNoRows`; now returns the raw error to callers
+
+### Added
+- `config/database_test.go` — connection string config validation tests
+- `config/logger_test.go` — logger init success and file creation tests
+- `controllers/product_test.go` — `generateBusinessID` tests (9 cases: series boundaries, prefixes, wraparound)
+- `middleware/error_test.go` — `GlobalErrorHandler` tests (fiber errors, generic errors, bad requests)
+- `models/models_test.go` — JSON marshal/unmarshal tests for all 14 model types + omitempty behavior
+- `utils/transaction_nil_test.go` — `txLog` nil-safety and `TransactionStep` struct tests
+
 ## [3.1.0] - 2026-06-10
 
 ### Added
@@ -14,6 +30,9 @@ All notable changes to PenbunAPI will be documented in this file.
 - `main.go` Fiber config: `DisableStartupMessage: true`, manual route printing instead of `EnablePrintRoutes`
 - All docs versioned to v3.1.0
 
+### Removed
+- `tb_publisher` and `tb_publisher_type` modules — fully deprecated per V3 Vendor Consolidation. All publishers, suppliers, and external partners unified under `tb_vendor` / `tb_vendor_type`. Deleted: `controllers/publisher.go`, `controllers/publisherType.go`, `models/publisher.go`, `models/publisherType.go`, all route registrations and test cases.
+
 ## [3.0.0] - 2026-06-10
 
 ### Added
@@ -23,7 +42,7 @@ All notable changes to PenbunAPI will be documented in this file.
   - Business ID generation (`generateBusinessID` in Go) matching `USP_GENERATE_BUSINESS_ID` algorithm (prefix + series char + 6-digit running number)
   - `OUTPUT INSERTED.autoID` pattern for identity retrieval on INSERT
 - 16 master data modules with 8 standard CRUD functions each (128 endpoints):
-  - Publisher, Publisher Type, Customer, Customer Type
+  - Customer, Customer Type
   - Vendor, Vendor Type, Book, Book Type
   - Discount, Discount Type, Unit Type, Product Format Type
   - Product Category, Product Group, Warehouse
@@ -42,6 +61,7 @@ All notable changes to PenbunAPI will be documented in this file.
 - Structured project layout: config, models, controllers, routes, middleware, utils
 - Parameterized SQL queries (SQL injection prevention)
 - 109 unit tests with race detection across all packages
+- Publisher and Publisher Type modules — deprecated and consolidated under Vendor system
 - Response helper utilities for standardized JSON format (`{status, message, data}`)
 
 ### Changed

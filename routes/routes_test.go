@@ -39,10 +39,6 @@ func TestProtectedRoutes_RequireAuth(t *testing.T) {
 	SetupV1Routes(app, "test-secret")
 
 	routes := []string{
-		"/api/v1/protected/publisher/all",
-		"/api/v1/protected/publisher/page",
-		"/api/v1/protected/publisher/select/id/P001",
-		"/api/v1/protected/publisher/select/name/test",
 		"/api/v1/protected/book/all",
 		"/api/v1/protected/book/page",
 		"/api/v1/protected/book/select/id/B001",
@@ -62,8 +58,6 @@ func TestProtectedRoutes_RequireAuth(t *testing.T) {
 		"/api/v1/protected/unit-type/page",
 		"/api/v1/protected/product-category/all",
 		"/api/v1/protected/product-category/page",
-		"/api/v1/protected/publisher-type/all",
-		"/api/v1/protected/publisher-type/page",
 		"/api/v1/protected/customer-type/all",
 		"/api/v1/protected/customer-type/page",
 		"/api/v1/protected/vendor-type/all",
@@ -99,10 +93,6 @@ func TestProtectedWriteRoutes_RequireAuth(t *testing.T) {
 	}
 
 	routes := []writeRoute{
-		{"POST", "/api/v1/protected/publisher/insert"},
-		{"PUT", "/api/v1/protected/publisher/update/P001"},
-		{"PUT", "/api/v1/protected/publisher/delete/P001"},
-		{"DELETE", "/api/v1/protected/publisher/remove/P001"},
 		{"POST", "/api/v1/protected/book/insert"},
 		{"PUT", "/api/v1/protected/book/update/B001"},
 		{"PUT", "/api/v1/protected/book/delete/B001"},
@@ -139,7 +129,7 @@ func TestJWTMiddlewareOnRoutes(t *testing.T) {
 	app := fiber.New()
 	SetupV1Routes(app, "test-secret")
 
-	req := httptest.NewRequest("GET", "/api/v1/protected/publisher/all", nil)
+	req := httptest.NewRequest("GET", "/api/v1/protected/book/all", nil)
 	req.Header.Set("Authorization", "Bearer invalid-token")
 	resp, _ := app.Test(req)
 	assert.Equal(t, 401, resp.StatusCode)
